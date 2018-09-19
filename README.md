@@ -1,6 +1,6 @@
 # StormTrackingScripts #
 
-**IN PROGRESS **
+**IN PROGRESS**
 
 ## Description ##
 
