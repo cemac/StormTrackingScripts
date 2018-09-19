@@ -11,8 +11,10 @@ import glob
 
 def main(x1, x2, y1, y2, size_of_storm):
 
+    # file name
     fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
              'ah261_4km_200012070030-200012072330.nc')
+    # file root for generating file list
     froot = '/nfs/a277/IMPALA/data/4km/precip_tracking_12km_hourly/'
     storm_diurnal = np.zeros((24), float)
     areas = np.zeros((24), float)
