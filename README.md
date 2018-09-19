@@ -1,6 +1,6 @@
 # StormTrackingScripts #
 
-** IN PROGRESS **
+**IN PROGRESS **
 
 ## Description ##
 
@@ -19,7 +19,7 @@ Currently run in series:
 * Then you run the c2c4…py file in the main rainfall_tracks directory
 * run via
   ```python
-  import __.main(345,375,10,18,5000) 
+  import __.main(345,375,10,18,5000)
   ```
 
 ## Acknowledgements ##
