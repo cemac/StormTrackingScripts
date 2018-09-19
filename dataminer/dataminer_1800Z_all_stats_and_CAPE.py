@@ -390,10 +390,10 @@ def main(x1, x2, y1, y2, size_of_storm):
                 eve_wind3_mean = eve_wind3_mean.data
                 eve_wind_99p = eve_wind_99p.data
                 eve_wind3_99p = eve_wind3_99p.data
-            print eve_wind3_mean - midday_wind3,eve_wind3_mean, midday_wind3, "Problem?"
+            #print(str(eve_wind3_mean - midday_wind3,eve_wind3_mean, midday_wind3,)+"Problem?")
             except TypeError:
-                print 'error'
-            elif cube_midday_precip <= 0.1/3600.:
+                print('error')
+            elif cube_midday_precip <= 0.1/3600.0:
                 pressers = cube_omega_1200.coord('pressure').points
                 cube_col_w_mean = cube_col_w.collapsed(['latitude','longitude'], iris.analysis.MEAN).data
                 cube_col_w_p99 = cube_col_w.collapsed(['latitude','longitude'], iris.analysis.PERCENTILE, percent = 99).data
