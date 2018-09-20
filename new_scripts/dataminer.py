@@ -1,7 +1,9 @@
 '''
+New data miner script based off:
 dataminer_1800z_all_stats_CAPE.py
 find the difference between c30404 and c30403 for TCW
 and the shear values
+STAGE 1 : remove requirement for folder structure
 '''
 # Modules required
 import iris
@@ -15,6 +17,7 @@ from matplotlib import colors
 import glob
 import pandas as pd
 from dataminer_functions import dmfuctions
+from os.path import expanduser
 # Variables
 size_of_storm = 5000
 x1, x2 = [345, 375]
@@ -23,12 +26,13 @@ y1, y2 = [10, 18]
 dmf = dmfuctions(x1, x2, y1, y2, size_of_storm)
 fname = ('/nfs/a65/eejac/VERA/IMPALA/olr_tracking_12km/stats/' +
          'WAfrica_Rory/*/*.txt')
-csvname = ('../fc_storms_to_keep_area_' + str(size_of_storm) + '_longitudes_'
-           + str(x1) + '_' + str(x2) + '_' + str(y1) + '_' + str(y2) +
-           '_1800Z.csv')
-altcsvname = ('../CP4_FC_precip_storms_over_box_area_' + str(size_of_storm) +
-              '_lons_' + str(x1) + '_' + str(x2) + '_lat_' + str(y1) + '_' +
-              str(y2) + '.csv')
+stormhome = expanduser("~")+'AMMA2050'
+csvname = (home + '/fc_storms_to_keep_area_' + str(size_of_storm) +
+           '_longitudes_' + str(x1) + '_' + str(x2) + '_' + str(y1) + '_' +
+           str(y2) + '_1800Z.csv')
+altcsvname = (home + '/CP4_FC_precip_storms_over_box_area_' +
+              str(size_of_storm) + '_lons_' + str(x1) + '_' + str(x2) +
+              '_lat_' + str(y1) + '_' + str(y2) + '.csv')
 # Generating file list
 C4_CC_list = []
 C4_FC_list = []
