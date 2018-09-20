@@ -1,3 +1,4 @@
 .tasks.md
 csvs
 *.csv
+*/*.pyc
