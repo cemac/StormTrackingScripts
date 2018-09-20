@@ -2,3 +2,4 @@
 csvs
 *.csv
 */*.pyc
+*.pyc
