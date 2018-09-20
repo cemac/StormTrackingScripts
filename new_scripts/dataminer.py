@@ -14,14 +14,13 @@ import collections
 from matplotlib import colors
 import glob
 import pandas as pd
-import dataminer_funtions
-
+from dataminer_functions import dmfuctions
 # Variables
 size_of_storm = 5000
 x1, x2 = [345, 375]
 y1, y2 = [10, 18]
 # Written a module dmfuctions with suite of funtions all using this information
-dmf = dataminer_funtions.dmfuctions(x1, x2, y1, y2, storm_size)
+dmf = dmfuctions(x1, x2, y1, y2, size_of_storm)
 fname = ('/nfs/a65/eejac/VERA/IMPALA/olr_tracking_12km/stats/' +
          'WAfrica_Rory/*/*.txt')
 csvname = ('../fc_storms_to_keep_area_' + str(size_of_storm) + '_longitudes_'
@@ -53,3 +52,12 @@ except IOError:
     # if its not there we'll have to generate it from CP4
     storms_to_keep = dfm.gen_storms_to_keep(altcsvname)
 np.savetxt(csvname, storms_to_keep[:, :], delimiter=',')
+Stormnum = 0
+GOODUN = 0
+keepun = 0
+olrkeepers = []
+list_of_storms = collections.Counter(storms_to_keep[:, 8])
+try:
+    guaranteed_failsafe = gent('nofile.csv', delimiter=',')
+except IOError:
+    dmf.gen_var_csv()
