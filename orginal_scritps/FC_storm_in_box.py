@@ -1,8 +1,6 @@
-####################################
-#
-# storms_over_Niamey_at_1800.py
-#
-####################################
+'''
+FC version of Rory's orginal script
+'''
 
 def main(x1,x2,y1,y2,size_of_storm):
 
@@ -43,7 +41,7 @@ def main(x1,x2,y1,y2,size_of_storm):
 		highy = y
   for m in range(6,10):
    for d1 in range(0,30):
-    for day in range(1,25):  
+    for day in range(1,25):
      flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/precip_tracking_12km_hourly/'+str(yr)+'/a04203*4km_'+str(yr)+'0'+str(m)+str(dys[d1])+'0030-'+str(yr)+'0'+str(m)+str(dys[d1])+'2330_'+str(day)+'.txt')
      for fle in flelist:
         file =  open(fle,'r')
@@ -78,7 +76,7 @@ def main(x1,x2,y1,y2,size_of_storm):
 #For Niamey, we want have a very small location. So we want to track
 # any storm that goes over Niamey.
 # this means the storm spans farther to the west, and east, north and south
- 
+
            if e >= size_of_storm: #We want storms of a certain size
             center_lon = (float(lons[int(llon-1)]) + float(lons[int(ulon-1)])) /2.0
             center_lat = (float(lats[int(llat-1)]) + float(lats[int(ulat-1)]))/2.0
