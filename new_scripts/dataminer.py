@@ -26,13 +26,14 @@ y1, y2 = [10, 18]
 dmf = dmfuctions(x1, x2, y1, y2, size_of_storm)
 fname = ('/nfs/a65/eejac/VERA/IMPALA/olr_tracking_12km/stats/' +
          'WAfrica_Rory/*/*.txt')
-stormhome = expanduser("~")+'AMMA2050'
-csvname = (home + '/fc_storms_to_keep_area_' + str(size_of_storm) +
+stormhome = expanduser("~")+'/AMMA2050'
+csvname = (stormhome + '/fc_storms_to_keep_area_' + str(size_of_storm) +
            '_longitudes_' + str(x1) + '_' + str(x2) + '_' + str(y1) + '_' +
            str(y2) + '_1800Z.csv')
-altcsvname = (home + '/CP4_FC_precip_storms_over_box_area_' +
+altcsvname = (stormhome + '/CP4_FC_precip_storms_over_box_area_' +
               str(size_of_storm) + '_lons_' + str(x1) + '_' + str(x2) +
               '_lat_' + str(y1) + '_' + str(y2) + '.csv')
+csvroot = 'test'
 # Generating file list
 C4_CC_list = []
 C4_FC_list = []
@@ -54,7 +55,7 @@ try:
 except IOError:
     print('Generating csv file ...')
     # if its not there we'll have to generate it from CP4
-    storms_to_keep = dfm.gen_storms_to_keep(altcsvname)
+    storms_to_keep = dmf.gen_storms_to_keep(altcsvname)
 np.savetxt(csvname, storms_to_keep[:, :], delimiter=',')
 Stormnum = 0
 GOODUN = 0
@@ -64,4 +65,6 @@ list_of_storms = collections.Counter(storms_to_keep[:, 8])
 try:
     guaranteed_failsafe = gent('nofile.csv', delimiter=',')
 except IOError:
-    dmf.gen_var_csv()
+    dmf.gen_var_csvs(csvroot, storms_to_keep)
+# Code repeats l571 to l935
+# adapt gen var csv to work for both
