@@ -156,6 +156,10 @@ class dmfuctions:
                         for lex in lvl:
                             mwind2 = iris.analysis.maths.exponentiate(mwind,
                                                                       lex)
+                            mwind1p = mwind2.collapsed(['latitude',
+                                                        'longitude'],
+                                                       iris.analysis.PERCENTILE,
+                                                       percent=99)
                             mwind2 = mwind2.collapsed(['latitude',
                                                        'longitude'],
                                                       iris.analysis.MEAN).data
@@ -163,6 +167,12 @@ class dmfuctions:
                                 allvars['midday_wind'].loc[row[0]] = mwind2
                             elif num == 11 and lex == 3:
                                 allvars['midday_wind3'].loc[row[0]] = mwind2
+                            elif lex == 0.5 and num == 17:
+                                allvars['eve_wind_mean'].loc[row[0]] = mwind1p
+                                allvars['eve_wind_99p'].loc[row[0]] = mwind2
+                            elif lex == 3 and num == 17:
+                                allvars['eve_wind3_mean'].loc[row[0]] = mwind2
+                                allvars['eve_wind3_99p'].loc[row[0]] = mwind1p
         allvars.to_csv('test.csv')
         return
 
