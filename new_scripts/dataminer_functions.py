@@ -84,8 +84,8 @@ class dmfuctions:
         else:
             ds = pd.Series(os.listdir(dataroot))
             foldername = ds[ds.str.len() == 6].reset_index(drop=True)
-        df = df = pd.DataFrame(columns=['file', 'codes'],
-                               index=[range(0, len(foldername))])
+        df = pd.DataFrame(columns=['file', 'codes'],
+                          index=[range(0, len(foldername))])
         for i in range(0, len(foldername)):
             try:
                 df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
@@ -94,8 +94,7 @@ class dmfuctions:
                              foldername[i]]
             except ValueError:
                 pass
-        flist = df.dropna()
-        return flist
+        return df
 
     def gen_var_csvs(self, csvroot, storms_to_keep):
         '''
@@ -114,23 +113,23 @@ class dmfuctions:
         allvars = pd.read_csv('all_vars_template.csv')
         # tqdm is a progress wrapper
         for row in tqdm(stormsdf.itertuples(), total=len(stormsdf),
-                        unit="storms"):
+                        unit="storm"):
             storminfo = (str(int(row.year)) + str(int(row.month)).zfill(2) +
                          str(int(row.day)).zfill(2))
+            # If any files with structure exsit
+            flist = self.gen_flist(storminfo, varcodes=self.vars['code'])
+            if flist['file'].isnull().sum() > 0:
+                continue
             # Initialise row
             allvars.loc[row[0]] = 0
             allvars['storms_to_keep'].loc[row[0]] = row.stormid
             allvars['OLRs'].loc[row[0]] = row.mean_olr
-            # If any files with structure exsit
-            flist = self.gen_flist(storminfo, varcodes=self.vars['code'])
-            xy = iris.Constraint(longitude=lambda cell: float(row.llon)
-                                 <= cell <= float(row.ulon), latitude=lambda
-                                 cell: float(row.llat) <= cell <= float(row.ulat))
+            xy = self.genslice(row.llon, row.llat, row.ulat, row.ulon)
+            evemid = [11, 17]
+            lvl = [0.5, 3]
             for rw in flist.itertuples():
                 if rw.codes == ('c00409'):
-                    print(rw.file)
                     allvari = iris.load_cube(rw.file, xy)
-                    evemid = [11, 17]
                     for num in evemid:
                         tvari = allvari[num, :, :]
                         tvarimean = tvari.collapsed(['latitude', 'longitude'],
@@ -140,14 +139,30 @@ class dmfuctions:
                             continue
                         else:
                             allvars['eve_mslp_mean'].loc[row[0]] = tvarimean
-                            tvari1p = tvari.collapsed(['latitude', 'longitude'],
+                            tvari1p = tvari.collapsed(['latitude',
+                                                       'longitude'],
                                                       iris.analysis.PERCENTILE,
                                                       percent=99).data
                             allvars['eve_mslp_1p'].loc[row[0]] = tvari1p
-                #elif rw.codes in ('c03225', 'c03226'):
-                #    allvari = iris.load_cube(rw.file, xy)
-                #else:
-            #        allvari = iris.load_cube(rw.file)
+                elif rw.codes in ('c03225'):
+                    u = iris.load_cube(rw.file, xy)
+                elif rw.codes in ('c03226'):
+                    v = iris.load_cube(rw.file, xy)
+                    for num in evemid:
+                        mwind = (iris.analysis.maths.exponentiate(u[num, :, :],
+                                                                  2) +
+                                 iris.analysis.maths.exponentiate(v[num, :, :],
+                                                                  2))
+                        for lex in lvl:
+                            mwind2 = iris.analysis.maths.exponentiate(mwind,
+                                                                      lex)
+                            mwind2 = mwind2.collapsed(['latitude',
+                                                       'longitude'],
+                                                      iris.analysis.MEAN).data
+                            if lex == 0.5 and num == 11:
+                                allvars['midday_wind'].loc[row[0]] = mwind2
+                            elif num == 11 and lex == 3:
+                                allvars['midday_wind3'].loc[row[0]] = mwind2
         allvars.to_csv('test.csv')
         return
 
@@ -157,31 +172,32 @@ class dmfuctions:
 
         return newvar
 
-    def genslice(self, row, n1=None, n2=None):
+    def genslice(self, llon, llat, ulat, ulon, n1=None, n2=None):
         """
         """
         if n1 is None and n2 is None:
-            xysmallslice = iris.Constraint(longitude=lambda cell: row.llon
-                                           <= cell <= row.ulon, latitude=lambda
-                                           cell: row.llat <= cell <= row.ulat)
+            xysmallslice = iris.Constraint(longitude=lambda cell: float(llon)
+                                           <= cell <= float(ulon),
+                                           latitude=lambda cell: float(llat) <=
+                                           cell <= float(ulat))
         elif n1 is not None and n2 is None:
             xysmallslice = iris.Constraint(pressure=lambda cell: n1 ==
                                            cell, longitude=lambda cell:
-                                           row.llon <= cell <= row.ulon,
-                                           latitude=lambda cell: row.llat
-                                           <= cell <= row.ulat)
+                                           float(llon) <= cell <= float(ulon),
+                                           latitude=lambda cell: float(llat)
+                                           <= cell <= float(ulat))
         elif n1 == 500 and n2 == 800:
             xysmallslice = iris.Constraint(pressure=lambda cell: n1 <= cell <=
                                            n2 or cell == 60,
                                            longitude=lambda cell:
-                                           row.llon <= cell <=
-                                           row.ulon, latitude=lambda
-                                           cell: row.llat <= cell
-                                           <= row.ulat)
+                                           float(llon) <= cell <=
+                                           float(ulon), latitude=lambda
+                                           cell: float(llat) <= cell
+                                           <= float(ulat))
         else:
             xysmallslice = iris.Constraint(pressure=lambda cell: n1 >=
                                            cell >= n2, longitude=lambda cell:
-                                           row.llon <= cell <= row.ulon,
-                                           latitude=lambda cell: row.llat <=
-                                           cell <= row.ulat)
+                                           float(llon) <= cell <= float(ulon),
+                                           latitude=lambda cell: float(llat) <=
+                                           cell <= float(ulat))
         return xysmallslice
