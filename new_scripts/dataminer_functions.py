@@ -14,6 +14,8 @@ import pandas as pd
 import glob
 import iris
 import os
+from tqdm import tqdm
+
 
 class dmfuctions:
     '''Description
@@ -67,7 +69,7 @@ class dmfuctions:
                 storms_to_keep = np.concatenate((storms_to_keep, temp), axis=0)
         return storms_to_keep
 
-    def gen_flist(self, dataroot, storminfo, varcodes=None):
+    def gen_flist(self, storminfo, varcodes=None):
         '''
         Generate flist - search for files pertaining to that storm
         Args:
@@ -82,11 +84,14 @@ class dmfuctions:
         else:
             ds = pd.Series(os.listdir(dataroot))
             foldername = ds[ds.str.len() == 6].reset_index(drop=True)
-        df = pd.DataFrame(columns=['codes'], index=[range(0, len(foldername))])
+        df = df = pd.DataFrame(columns=['file', 'codes'],
+                               index=[range(0, len(foldername))])
         for i in range(0, len(foldername)):
             try:
-                df.loc[i] = glob.glob(str(dataroot) + str(foldername[i]) + '/' +
-                                      str(foldername[i]) + '*' + str(storminfo) + '*.nc')
+                df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
+                                       + '/' + str(foldername[i]) + '*_' +
+                                       str(storminfo) + '*-*.nc'),
+                             foldername[i]]
             except ValueError:
                 pass
         flist = df.dropna()
@@ -107,61 +112,42 @@ class dmfuctions:
         varcodes = self.vars['code']
         # for each row create a small sclice using iris
         allvars = pd.read_csv('all_vars_template.csv')
-        for row in stormsdf.itertuples():
-            '''
-            xysmallslice = iris.Constraint(longitude=lambda cell: row.llon
-                                           <= cell <= row.ulon, latitude=lambda
-                                           cell: row.llat <= cell <= row.ulat)
-            xysmallslice_925 = iris.Constraint(pressure=lambda cell: 925 ==
-                                               cell, longitude=lambda cell:
-                                               row.llon <= cell <= row.ulon,
-                                               latitude=lambda cell: row.llat
-                                               <= cell <= row.ulat)
-            xysmallslice_650 = iris.Constraint(pressure=lambda cell: 650 ==
-                                               cell, longitude=lambda cell:
-                                               row.llon <= cell <= row.ulon,
-                                               latitude=lambda cell: row.llat
-                                               <= cell <= row.ulat)
-            xysmallslice_850 = iris.Constraint(pressure=lambda cell: 850 ==
-                                               cell, longitude=lambda cell:
-                                               row.llon <= cell <= row.ulon,
-                                               latitude=lambda cell: row.llat
-                                               <= cell <= row.ulat)
-            xysmallslice_500 = iris.Constraint(pressure=lambda cell: 500 ==
-                                               cell, longitude=lambda cell:
-                                               row.llon <= cell <= row.ulon,
-                                               latitude=lambda cell: row.llat
-                                               <= cell <= row.ulat)
-            xysmallslice_600plus = iris.Constraint(pressure=lambda cell: 600 >=
-                                                   cell >= 300,
-                                                   longitude=lambda cell:
-                                                   row.llon <= cell <=
-                                                   row.ulon, latitude=lambda
-                                                   cell: row.llat <= cell
-                                                   <= row.ulat)
-            xysmallslice_800_925 = iris.Constraint(pressure=lambda cell:
-                                                   925 >= cell >= 800,
-                                                   longitude=lambda cell:
-                                                   row.llon <= cell <=
-                                                   row.ulon, latitude=lambda
-                                                   cell: row.llat <= cell <=
-                                                   row.ulat)
-            xysmallslice_500_800 = iris.Constraint(pressure=lambda cell: 500
-                                                   <= cell <= 800 or cell ==
-                                                   60, longitude=lambda cell:
-                                                   row.llon <= cell <=
-                                                   row.ulon, latitude=lambda
-                                                   cell: row.llat <= cell
-                                                   <= row.ulat)
-            '''
+        # tqdm is a progress wrapper
+        for row in tqdm(stormsdf.itertuples(), total=len(stormsdf),
+                        unit="storms"):
             storminfo = (str(int(row.year)) + str(int(row.month)).zfill(2) +
                          str(int(row.day)).zfill(2))
-            # If any files with structure exsit
-            flist = self.gen_flist(self, storminfo, varcodes=self.vars['code'])
-            # initialise row
+            # Initialise row
             allvars.loc[row[0]] = 0
             allvars['storms_to_keep'].loc[row[0]] = row.stormid
             allvars['OLRs'].loc[row[0]] = row.mean_olr
+            # If any files with structure exsit
+            flist = self.gen_flist(storminfo, varcodes=self.vars['code'])
+            xy = iris.Constraint(longitude=lambda cell: float(row.llon)
+                                 <= cell <= float(row.ulon), latitude=lambda
+                                 cell: float(row.llat) <= cell <= float(row.ulat))
+            for rw in flist.itertuples():
+                if rw.codes == ('c00409'):
+                    print(rw.file)
+                    allvari = iris.load_cube(rw.file, xy)
+                    evemid = [11, 17]
+                    for num in evemid:
+                        tvari = allvari[num, :, :]
+                        tvarimean = tvari.collapsed(['latitude', 'longitude'],
+                                                    iris.analysis.MEAN).data
+                        if num == 11:
+                            allvars['midday_mslp'].loc[row[0]] = tvarimean
+                            continue
+                        else:
+                            allvars['eve_mslp_mean'].loc[row[0]] = tvarimean
+                            tvari1p = tvari.collapsed(['latitude', 'longitude'],
+                                                      iris.analysis.PERCENTILE,
+                                                      percent=99).data
+                            allvars['eve_mslp_1p'].loc[row[0]] = tvari1p
+                #elif rw.codes in ('c03225', 'c03226'):
+                #    allvari = iris.load_cube(rw.file, xy)
+                #else:
+            #        allvari = iris.load_cube(rw.file)
         allvars.to_csv('test.csv')
         return
 
@@ -170,3 +156,32 @@ class dmfuctions:
         """
 
         return newvar
+
+    def genslice(self, row, n1=None, n2=None):
+        """
+        """
+        if n1 is None and n2 is None:
+            xysmallslice = iris.Constraint(longitude=lambda cell: row.llon
+                                           <= cell <= row.ulon, latitude=lambda
+                                           cell: row.llat <= cell <= row.ulat)
+        elif n1 is not None and n2 is None:
+            xysmallslice = iris.Constraint(pressure=lambda cell: n1 ==
+                                           cell, longitude=lambda cell:
+                                           row.llon <= cell <= row.ulon,
+                                           latitude=lambda cell: row.llat
+                                           <= cell <= row.ulat)
+        elif n1 == 500 and n2 == 800:
+            xysmallslice = iris.Constraint(pressure=lambda cell: n1 <= cell <=
+                                           n2 or cell == 60,
+                                           longitude=lambda cell:
+                                           row.llon <= cell <=
+                                           row.ulon, latitude=lambda
+                                           cell: row.llat <= cell
+                                           <= row.ulat)
+        else:
+            xysmallslice = iris.Constraint(pressure=lambda cell: n1 >=
+                                           cell >= n2, longitude=lambda cell:
+                                           row.llon <= cell <= row.ulon,
+                                           latitude=lambda cell: row.llat <=
+                                           cell <= row.ulat)
+        return xysmallslice
