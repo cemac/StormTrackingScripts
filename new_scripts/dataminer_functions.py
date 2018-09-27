@@ -90,9 +90,9 @@ class dmfuctions:
             try:
                 df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
                                        + '/' + str(foldername[i]) + '*_' +
-                                       str(storminfo) + '*-*.nc'),
+                                       str(storminfo) + '*-*.nc')[0],
                              foldername[i]]
-            except ValueError:
+            except IndexError:
                 pass
         return df
 
