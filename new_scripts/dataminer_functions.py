@@ -1,7 +1,5 @@
 """ Python module for working Storm tracking CSV files
-    STAGE = 1
-    * Stage 1 development create functions for data mining
-      reduce code size
+    STAGE = 2
     * Stage 2 remove hard coding
     * Stage 3 improve effciency
     * Stage 4 integrate
@@ -22,9 +20,6 @@ class dmfuctions:
        Stage 1: currently a suit of functions for finding information on
        storms in region and Generating cvs files of that information.
     '''
-
-# Global variables
-
     def __init__(self, x1, x2, y1, y2, storm_size):
 
         # Variables
@@ -36,15 +31,13 @@ class dmfuctions:
         self.storm_size = storm_size
         self.varlist = ['year', 'month', 'day', 'hour', 'llon', 'ulon', 'llat',
                         'ulat', 'stormid', 'mean_olr']
+        self.varlistex = ['stormid', 'year', 'month', 'day', 'hour', 'llon',
+                          'ulon', 'llat', 'ulat', 'centlon', 'centlat', 'area',
+                          'mean_olr']
         self.vars = pd.read_csv('vars.csv')
 
     def gen_storms_to_keep(self, altcsvname):
-        dates = gent(altcsvname, delimiter=',', names=['stormid', 'year',
-                                                       'month',
-                                                       'day', 'hour', 'llon',
-                                                       'ulon', 'llat', 'ulat',
-                                                       'centlon', 'centlat',
-                                                       'area', 'mean_olr'])
+        dates = gent(altcsvname, delimiter=',', names=[self.varlistex])
         dates = np.sort(dates[:], axis=-1, order=['stormid', 'mean_olr'])
         storms_to_keep = np.zeros((1, 10), float)
         # You need to bear in mind that this code wants to track the point when
@@ -54,18 +47,14 @@ class dmfuctions:
             goodup = 0
         for rw in range(0, storms_to_keep.shape[0]):
             if int(strm) == int(storms_to_keep[rw, 8]):
-                goodup = goodup + 1
+                goodup += 1
                 continue
         if goodup < 1 and 18 == int(line['hour']):
             if np.sum(storms_to_keep[0, :]) == 0:
-                storms_to_keep[0, :] = line['year', 'month', 'day', 'hour',
-                                            'llon', 'ulon', 'llat', 'ulat',
-                                            'stormid', 'mean_olr']
+                storms_to_keep[0, :] = line[self.varlist]
             else:
                 temp = np.zeros((1, 10), float)
-                temp[0, :] = line['year', 'month', 'day', 'hour', 'llon',
-                                  'ulon', 'llat', 'ulat', 'stormid',
-                                  'mean_olr']
+                temp[0, :] = line[self.varlist]
                 storms_to_keep = np.concatenate((storms_to_keep, temp), axis=0)
         return storms_to_keep
 
@@ -104,10 +93,8 @@ class dmfuctions:
         stormsdf = pd.DataFrame(storms_to_keep, columns=self.varlist)
         # Variables
         varlist = pd.read_csv('varlist.csv', header=None)
-        OLRmin = 300.0
-        ukeep925 = 0.0
-        ukeep650 = 0.0
-        ukeepsheer = 0.0
+        vels = 0
+        vels2 = 0
         varcodes = self.vars['code']
         # for each row create a small sclice using iris
         allvars = pd.read_csv('all_vars_template.csv')
@@ -126,6 +113,12 @@ class dmfuctions:
             allvars['storms_to_keep'].loc[row[0]] = row.stormid
             allvars['OLRs'].loc[row[0]] = row.mean_olr
             xy = self.genslice(row.llon, row.llat, row.ulat, row.ulon)
+            xyhi = self.genslice(row.llon, row.llat, row.ulat, row.ulon,
+                                 n1=500, n2=800)
+            xylw = self.genslice(row.llon, row.llat, row.ulat, row.ulon,
+                                 n1=925, n2=800)
+            xy600 = self.genslice(row.llon, row.llat, row.ulat, row.ulon,
+                                  n1=600)
             evemid = [11, 17]
             lvl = [0.5, 3]
             for rw in flist.itertuples():
@@ -145,10 +138,15 @@ class dmfuctions:
                                                       iris.analysis.PERCENTILE,
                                                       percent=99).data
                             allvars['eve_mslp_1p'].loc[row[0]] = tvari1p
+                    continue
                 elif rw.codes in ('c03225'):
                     u = iris.load_cube(rw.file, xy)
+                    vels += 1
                 elif rw.codes in ('c03226'):
                     v = iris.load_cube(rw.file, xy)
+                    vels += 1
+                if vels == 2:
+                    vels = 0
                     for num in evemid:
                         mwind = (iris.analysis.maths.exponentiate(u[num, :, :],
                                                                   2) +
@@ -174,14 +172,61 @@ class dmfuctions:
                             elif lex == 3 and num == 17:
                                 allvars['eve_wind3_mean'].loc[row[0]] = mwind2
                                 allvars['eve_wind3_99p'].loc[row[0]] = mwind1p
-        allvars.to_csv('test.csv')
+                    continue
+                else:
+                    var = iris.load_cube(rw.file)
+                    if rw.codes in ('f30201'):
+                        highu = var.extract(xyhi)[3, :, :, :]
+                        highu = highu.collapsed(['latitude', 'longitude'],
+                                                iris.analysis.MEAN)
+                        lowu = var.extract(xylw)[3, :, :, :]
+                        lowu = lowu.collapsed(['latitude', 'longitude'],
+                                              iris.analysis.MEAN)
+                        vels2 += 1
+                        continue
+                    elif rw.codes in ('f30202'):
+                        highv = var.extract(xyhi)[3, :, :, :]
+                        highv = highv.collapsed(['latitude', 'longitude'],
+                                                iris.analysis.MEAN)
+                        lowv = var.extract(xylw)[3, :, :, :]
+                        lowv = lowv.collapsed(['latitude', 'longitude'],
+                                              iris.analysis.MEAN)
+                        vels2 += 1
+                        continue
+                    if vels2 == 2:
+                        vels2 = 0
+                        lowup = lowu.collapsed(['pressure'], iris.analysis.MAX)
+                        hiup = highu.collapsed(['pressure'], iris.analysis.MIN)
+                        mshear = lowup.data - hiup.data
+                        allvars['max_shear'].loc[row[0]] = mshear
+                        maxcheck = 0
+                        for p1 in lowu.coord('pressure').points:
+                                for p2 in highu.coord('pressure').points:
+                                        lowslice = iris.Constraint(pressure=lambda cell:
+                                                                   cell == p1)
+                                        highslice = iris.Constraint(pressure=lambda cell:
+                                                                    cell == p2)
+                                        lowup2 = lowu.extract(lowslice).data
+                                        lowvp2 = lowv.extract(lowslice).data
+                                        highup2 = highu.extract(highslice).data
+                                        highvp2 = highv.extract(highslice).data
+                                        shearval = ((lowup2 - highup2)**2 +
+                                                    (lowvp2 - highvp2)**2)**0.5
+                                        if shearval > maxcheck:
+                                            maxcheck = shearval
+                        allvars['hor_shear'].loc[row[0]] = maxcheck
+                        continue
+                    if rw.codes in ('f30208'):
+                        omega = var.extract(xy600)
+                        continue
+                    elif rw.codes in ('f30204'):
+                        T = var.extract(xy600)
+                        continue
+                    else:
+                        varn = var.extract(xy)
+            break
+        allvars.to_csv('test2.csv')
         return
-
-    def calc_newvar(self, newvar_name):
-        """
-        """
-
-        return newvar
 
     def genslice(self, llon, llat, ulat, ulon, n1=None, n2=None):
         """

@@ -3,3 +3,5 @@ csvs
 *.csv
 */*.pyc
 *.pyc
+.outline.md
+new_scripts/test_functions
