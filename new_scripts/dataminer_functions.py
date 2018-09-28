@@ -119,6 +119,7 @@ class dmfuctions:
             # If any files with structure exsit
             flist = self.gen_flist(storminfo, varcodes=self.vars['code'])
             if flist['file'].isnull().sum() > 0:
+                print('WARNING: Storm missing data files, skipping...')
                 continue
             # Initialise row
             allvars.loc[row[0]] = 0
@@ -159,7 +160,7 @@ class dmfuctions:
                             mwind1p = mwind2.collapsed(['latitude',
                                                         'longitude'],
                                                        iris.analysis.PERCENTILE,
-                                                       percent=99)
+                                                       percent=99).data
                             mwind2 = mwind2.collapsed(['latitude',
                                                        'longitude'],
                                                       iris.analysis.MEAN).data
@@ -168,8 +169,8 @@ class dmfuctions:
                             elif num == 11 and lex == 3:
                                 allvars['midday_wind3'].loc[row[0]] = mwind2
                             elif lex == 0.5 and num == 17:
-                                allvars['eve_wind_mean'].loc[row[0]] = mwind1p
-                                allvars['eve_wind_99p'].loc[row[0]] = mwind2
+                                allvars['eve_wind_mean'].loc[row[0]] = mwind2
+                                allvars['eve_wind_99p'].loc[row[0]] = mwind1p
                             elif lex == 3 and num == 17:
                                 allvars['eve_wind3_mean'].loc[row[0]] = mwind2
                                 allvars['eve_wind3_99p'].loc[row[0]] = mwind1p
