@@ -1,26 +1,45 @@
-# StormTrackingScripts #
-
-**IN PROGRESS**
+# Storm Tracking Scripts #
 
 ## Description ##
 
-Development of Storm Tracking Scripts from ICAS dynamics group to improve functionality and "genericise".
+Development of Storm Tracking Scripts from ICAS dynamics group.
 
 ## Requirements ##
 
- * [Python 2.7](https://www.anaconda.com/download/)
+ * [Python 2.7](https://www.anaconda.com/download/) (Standard anaconda package)
  * [Iris](https://scitools.org.uk/iris/docs/latest)
+
+<hr>
+
+# Version 1.0 #
+
+The first release of developed scripts. Building from Rory's storm tracking scripts these functions have been moved a modular system. Finding storms in an area, extracting information about those storms and calculating some statistics about those storms and producing a set of Standard plots.
+
+## New Features ##
+
+* These scripts can now be ran anywhere.
+* Most hard coding has been removed.
+* Includes a progress bar to long running components.
+
 
 ## Usage ##
 
-Currently run in series:
-* run storm_in_box as fc_storm_in_box first to give you the storms over a given area.
-* Then run the py codes in the dataminer and CAPE… folders.
-* Then you run the c2c4…py file in the main rainfall_tracks directory
-* run via
-  ```python
-  import __.main(345,375,10,18,5000)
-  ```
+*To be filled in once completed*
+
+<hr>
+
+## Issue Templates ##
+
+* Please use our issue templates for feature requests and bug fixes.
+
+## Upcoming Features ##
+
+0. Speed up of programme (Ongoing)
+1. Ability to tailor to different simulations
+2. Ability to request additional variables
+3. Python GUI
+
+<hr>
 
 ## Acknowledgements ##
 
