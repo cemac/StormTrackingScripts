@@ -6,26 +6,17 @@ and the shear values
 STAGE 1 : remove requirement for folder structure
 '''
 # Modules required
-import iris
-import scipy.stats as stat
+from os.path import expanduser
 import numpy as np
 from numpy import genfromtxt as gent
-import matplotlib.pyplot as plt
-from iris.experimental.equalise_cubes import equalise_attributes
-import collections
-from matplotlib import colors
-import glob
-import pandas as pd
 from dataminer_functions import dmfuctions
-from os.path import expanduser
+
 # Variables
 size_of_storm = 5000
 x1, x2 = [345, 375]
 y1, y2 = [10, 18]
-# Written a module dmfuctions with suite of funtions all using this information
-dmf = dmfuctions(x1, x2, y1, y2, size_of_storm)
-fname = ('/nfs/a65/eejac/VERA/IMPALA/olr_tracking_12km/stats/' +
-         'WAfrica_Rory/*/*.txt')
+csvroot = ('testfc', ' testcc')
+dataroot = ('/nfs/a299/IMPALA/data/fc/4km/', '/nfs/a277/IMPALA/data/4km/')
 stormhome = expanduser("~")+'/AMMA2050'
 csvname = (stormhome + '/fc_storms_to_keep_area_' + str(size_of_storm) +
            '_longitudes_' + str(x1) + '_' + str(x2) + '_' + str(y1) + '_' +
@@ -33,38 +24,14 @@ csvname = (stormhome + '/fc_storms_to_keep_area_' + str(size_of_storm) +
 altcsvname = (stormhome + '/CP4_FC_precip_storms_over_box_area_' +
               str(size_of_storm) + '_lons_' + str(x1) + '_' + str(x2) +
               '_lat_' + str(y1) + '_' + str(y2) + '.csv')
-csvroot = 'test'
 # Generating file list
-C4_CC_list = []
-C4_FC_list = []
-flelist = glob.glob(fname)
-for element in range(0, len(flelist)):
-    fle = pd.read_fwf(flelist[element], header=None)
-    datu = np.asarray(fle)
-    for rw in range(0, datu.shape[0]):
-        if datu[rw, -1] == '4' or datu[rw, -1] == '2':
-            if 'fc' in flelist[element]:
-                C4_FC_list.extend([datu[rw, 0]])
-            else:
-                C4_CC_list.extend([datu[rw, 0]])
+dmf = dmfuctions(x1, x2, y1, y2, size_of_storm, dataroot[0])
 # find storms
 try:
-    # try fc file format
     storms_to_keep = gent(csvname, delimiter=',')
-    print storms_to_keep.shape
 except IOError:
-    print('Generating csv file ...')
+    print('Generating csv file of storms to keep ...')
     # if its not there we'll have to generate it from CP4
-    storms_to_keep = dmf.gen_storms_to_keep(altcsvname)
-np.savetxt(csvname, storms_to_keep[:, :], delimiter=',')
-Stormnum = 0
-GOODUN = 0
-keepun = 0
-olrkeepers = []
-list_of_storms = collections.Counter(storms_to_keep[:, 8])
-try:
-    guaranteed_failsafe = gent('nofile.csv', delimiter=',')
-except IOError:
-    dmf.gen_var_csvs(csvroot, storms_to_keep)
-# Code repeats l571 to l935
-# adapt gen var csv to work for both
+    storms_to_keep = dmf.gen_storms_to_keep(csvname)
+    np.savetxt(csvname, storms_to_keep[:, :], delimiter=',')
+dmf.gen_var_csvs(csvroot[0], storms_to_keep)

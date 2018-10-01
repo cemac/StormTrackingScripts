@@ -20,14 +20,14 @@ class dmfuctions(object):
        Stage 1: currently a suit of functions for finding information on
        storms in region and Generating cvs files of that information.
     '''
-    def __init__(self, x1, x2, y1, y2, storm_size):
+    def __init__(self, x1, x2, y1, y2, storm_size, dataroot):
 
         # Variables
         self.x1 = x1
         self.x2 = x2
         self.y1 = y1
         self.y2 = y2
-        self.dataroot = '/nfs/a299/IMPALA/data/fc/4km/'
+        self.dataroot = dataroot
         self.storm_size = storm_size
         self.varlist = ['year', 'month', 'day', 'hour', 'llon', 'ulon', 'llat',
                         'ulat', 'stormid', 'mean_olr']
@@ -40,8 +40,6 @@ class dmfuctions(object):
         dates = gent(altcsvname, delimiter=',', names=[self.varlistex])
         dates = np.sort(dates[:], axis=-1, order=['stormid', 'mean_olr'])
         storms_to_keep = np.zeros((1, 10), float)
-        # You need to bear in mind that this code wants to track the point when
-        # the storm is at minimum OLR.
         for line in dates:
             strm = line['stormid']
             goodup = 0
@@ -57,6 +55,7 @@ class dmfuctions(object):
                     temp[0, :] = line[self.varlist]
                     storms_to_keep = np.concatenate((storms_to_keep, temp),
                                                     axis=0)
+        # wirte out a csv file?
         return storms_to_keep
 
     def gen_flist(self, storminfo, varcodes=None):
@@ -336,7 +335,7 @@ class dmfuctions(object):
                             allvars['mass_mean_1800'].loc[row[0]] = massm
                     continue
             break
-        allvars.to_csv('test3.csv')
+        allvars.to_csv(csvroot+'test3.csv')
         return
 
     def genslice(self, llon, llat, ulat, ulon, n1=None, n2=None):
