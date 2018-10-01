@@ -95,6 +95,7 @@ class dmfuctions:
         varlist = pd.read_csv('varlist.csv', header=None)
         vels = 0
         vels2 = 0
+        ot = 0
         varcodes = self.vars['code']
         # for each row create a small sclice using iris
         allvars = pd.read_csv('all_vars_template.csv')
@@ -121,7 +122,28 @@ class dmfuctions:
                                   n1=600)
             evemid = [11, 17]
             lvl = [0.5, 3]
+            nums = [3, 5]
+            # Find if precip is meets criteria
+            precipfile = flist[flist.codes == 'a04203'].file
+            precip = iris.load_cube(precipfile).extract(xy)
+            precipm = precip[11:15, :, :]
+            precip = precip[17, :, :]
+            precip = precip.collapsed(['latitude', 'longitude'],
+                                      iris.analysis.PERCENTILE,
+                                      percent=99).data
+            precip = np.ndarray.tolist(precip)
+            precipm = precipm.collapsed(['time', 'latitude', 'longitude'],
+                                        iris.analysis.MEAN).data
+            if precipm >= 0.1/3600. and precip <= 1.0/3600.:
+                continue
+            else:
+                allvars['precip_99th_perc'].loc[row[0]] = precip
+                pvol = (precipm * (float(row.ulon) - float(row.llon)) *
+                                  (float(row.ulat) - float(row.llat)))
+                allvars['precip_accum'].loc[row[0]] = pvol
             for rw in flist.itertuples():
+                if rw.codes == 'a04203':
+                    continue
                 if rw.codes == ('c00409'):
                     allvari = iris.load_cube(rw.file, xy)
                     for num in evemid:
@@ -155,12 +177,10 @@ class dmfuctions:
                         for lex in lvl:
                             mwind2 = iris.analysis.maths.exponentiate(mwind,
                                                                       lex)
-                            mwind1p = mwind2.collapsed(['latitude',
-                                                        'longitude'],
+                            mwind1p = mwind2.collapsed(['latitude', 'longitude'],
                                                        iris.analysis.PERCENTILE,
                                                        percent=99).data
-                            mwind2 = mwind2.collapsed(['latitude',
-                                                       'longitude'],
+                            mwind2 = mwind2.collapsed(['latitude', 'longitude'],
                                                       iris.analysis.MEAN).data
                             if lex == 0.5 and num == 11:
                                 allvars['midday_wind'].loc[row[0]] = mwind2
@@ -218,12 +238,54 @@ class dmfuctions:
                         continue
                     if rw.codes in ('f30208'):
                         omega = var.extract(xy600)
+                        ot += 1
                         continue
                     elif rw.codes in ('f30204'):
                         T = var.extract(xy600)
+                        ot += 1
                         continue
                     else:
                         varn = var.extract(xy)
+                    if ot == 2:
+                        ot = 0
+                        for no in nums:
+                            Tnum = T[no, :, :, :]
+                            Onum = omega[no, :, :, :]
+                            Onum_1p = Onum.collapsed(['pressure', 'latitude',
+                                                      'longitude'],
+                                                     iris.analysis.MIN).data
+                            Onum_1p = np.ndarray.tolist(Onum_1p)
+                            Onum_holdr = Onum_1200.data
+                            ps = Onum.coord('pressure').points
+                            for p in range(0, Onum_holdr.shape[0]):
+                                for y in range(0, Onum_holdr.shape[1]):
+                                    for x in range(0, Onum_holdr.shape[2]):
+                                        if omega_12_holdr[p, y, x] == Onum_1p:
+                                            T_min = Tnum[p, y, x].data
+                                            plev = p
+                            gas = 287.058
+                            g = 9.80665
+                            rho = (100.*ps[plev])/(rgas*T_min)
+                            wnum = -1*Onum_1p/(rho*g)
+                            Onumn = Onum[plev, :, :].collapsed(['latitude',
+                                                                'longitude'],
+                                                               iris.analysis.MEAN).data
+                            Tnum = Tnum[plev, :, :].collapsed(['latitude',
+                                                               'longitude'],
+                                                              iris.analysis.MEAN)
+                            B1p = T_min - Tnum.data
+                            if no == 3:
+                                allvars['omega_1200_1p.'].loc[row[0]] = Onum_1p
+                                allvars['omega_1200_mean'].loc[row[0]] = Onumn
+                                allvars['buoyancy_1200_1p'].loc[row[0]] = B1p
+                                allvars['max_w_1200'].loc[row[0]] = wnum
+                            else:
+                                allvars['omega_1800_1p.'].loc[row[0]] = Onum_1p
+                                allvars['omega_1800_mean'].loc[row[0]] = Onumn
+                                allvars['buoyancy_1800_1p'].loc[row[0]] = B1p
+                                allvars['max_w_1800'].loc[row[0]] = wnum
+
+
             break
         allvars.to_csv('test2.csv')
         return
