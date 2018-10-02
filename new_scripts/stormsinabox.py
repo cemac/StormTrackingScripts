@@ -1,5 +1,6 @@
 '''
-Storm_in_a_box.py based off of Rory's script
+strominabox.py
+Initial function
 '''
 import glob
 import numpy as np
@@ -19,11 +20,10 @@ class storminbox(object):
         stormsdf = pd.DataFrame(columns=self.varlist)
         fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
                  'ah261_4km_200012070030-200012072330.nc')
-        # file root for generating file list
         froot = '/nfs/a277/IMPALA/data/4km/precip_tracking_12km_hourly/'
         df = pd.DataFrame()
-        df2 = pd.DataFrame(columns=['file'], index=[range(0, len(df))])
         df['file'] = (glob.glob(froot+'*/a04203*4km*.txt'))
+        df2 = pd.DataFrame(columns=['file'], index=[range(0, len(df))])
         # The data frame lists every file but we only want june to october
         for row in df.itertuples():
             if row.file[90:92] in [str(x).zfill(2) for x in range(6, 10)]:
