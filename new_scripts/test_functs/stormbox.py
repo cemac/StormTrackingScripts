@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Oct  1 13:47:32 2018
-
-@author: earhbu
+testing code
 """
 
 import glob
@@ -25,3 +24,11 @@ for row in df.itertuples():
         df2.loc[row[0]] = 0
         df2['file'].loc[row[0]] = row.file
 df = df2.reset_index(drop=True)
+cols = ['storm', 'no', 'area', 'centroid', 'box', 'life', 'u', 'v', 'mean', 'min',
+        'max', 'accreted', 'parent', 'child', 'cell']
+vars = pd.read_csv(df.file[0], names=cols,  header=None, delim_whitespace=True)
+var2 = vars[pd.notnull(vars['mean'])]
+varslist = ['stormid', 'year', 'month', 'day', 'hour', 'llon',
+                         'ulon', 'llat', 'ulat', 'centlon', 'centlat', 'area',
+                         'mean_olr']
+stormsdf = pd.DataFrame(columns=varslist)
