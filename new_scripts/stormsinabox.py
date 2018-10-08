@@ -1,6 +1,7 @@
 '''
 strominabox.py
 Initial function
+test comment 
 '''
 import glob
 import numpy as np
