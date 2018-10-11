@@ -393,7 +393,7 @@ def main(x1, x2, y1, y2, size_of_storm):
             #print(str(eve_wind3_mean - midday_wind3,eve_wind3_mean, midday_wind3,)+"Problem?")
             except TypeError:
                 print('error')
-            elif cube_midday_precip <= 0.1/3600.0:
+            if cube_midday_precip <= 0.1/3600.0:
                 pressers = cube_omega_1200.coord('pressure').points
                 cube_col_w_mean = cube_col_w.collapsed(['latitude','longitude'], iris.analysis.MEAN).data
                 cube_col_w_p99 = cube_col_w.collapsed(['latitude','longitude'], iris.analysis.PERCENTILE, percent = 99).data
@@ -425,7 +425,6 @@ def main(x1, x2, y1, y2, size_of_storm):
 
                 rho = (pressers[pressure_lev_1800]*100.)/(rgas*T_min_1800)
                 cube_w_1800 = -1*cube_omega_1800_1p/(rho*g)
-    		    print 'w', cube_w_1200, cube_w_1800, pressure_lev_1800, pressure_lev_1200
                 cube_T_1200 = cube_T_1200[pressure_lev_1200,:,:].collapsed(['latitude','longitude'], iris.analysis.MEAN)
                 cube_T_1800 = cube_T_1800[pressure_lev_1800,:,:].collapsed(['latitude','longitude'], iris.analysis.MEAN)
                 cube_omega_1200_mean = cube_omega_1200[pressure_lev_1200,:,:].collapsed(['latitude','longitude'], iris.analysis.MEAN)

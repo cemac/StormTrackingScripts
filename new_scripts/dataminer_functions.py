@@ -1,10 +1,24 @@
-""" Python module for working Storm tracking CSV files
-    STAGE = 2
-    * Stage 2 remove hard coding
-    * Stage 3 improve effciency
-    * Stage 4 integrate
-"""
+# -*- coding: utf-8 -*-
+"""Stormsin a box
 
+This module was developed by CEMAC as part of the AMAMA 2050 Project.
+This scripts build on Work done my Rory Fitzpatrick, taking the stroms from
+stromsinabox csv files
+
+Example:
+    To use::
+        from dataminer_functions import dmfuctions
+        dmf = dmfuctions(x1, x2, y1, y2, size_of_storm, dataroot[0])
+        dmf.gen_var_csvs(csvroot[0], storms_to_keep)
+
+Attributes:
+    varslist(list): List of vairables required in dataminer
+    fname(str): File to extract lat and lons
+    froot(str): Root folder of data
+
+.. CEMAC_stomtracking:
+   https://github.com/cemac/StormTrackingScripts
+"""
 
 import numpy as np
 import pandas as pd
@@ -19,6 +33,14 @@ class dmfuctions(object):
     '''Description
        Stage 1: currently a suit of functions for finding information on
        storms in region and Generating cvs files of that information.
+
+       Attributes:
+        x1(int): longitude index East
+        x2(int): longitude index West
+        y1(int): latitude index South
+        y2(int): latitude index North
+        size_of_storm(int): size of storm in km e.g 5000
+        dataroot(str): Root folder of data
     '''
     def __init__(self, x1, x2, y1, y2, storm_size, dataroot):
 
@@ -37,6 +59,13 @@ class dmfuctions(object):
         self.vars = pd.read_csv('vars.csv')
 
     def gen_storms_to_keep(self, altcsvname):
+        """Generate storms to keep csvs
+
+        Args:
+            altcsvname (str): csv.
+
+        Returns: storms to keep
+        """
         dates = gent(altcsvname, delimiter=',', names=[self.varlistex])
         dates = np.sort(dates[:], axis=-1, order=['stormid', 'mean_olr'])
         storms_to_keep = np.zeros((1, 10), float)
@@ -59,15 +88,17 @@ class dmfuctions(object):
         return storms_to_keep
 
     def gen_flist(self, storminfo, varcodes=None):
-        '''
-        Generate flist - search for files pertaining to that storm
+        """Generate flist
+
         Args:
-        dataroot: path to data
-        storminfo: YYYYMMDD
-        varcodes: dataframe of var codes required
-        Returns: list of files contain variables for that storm
-        Pandas dataframe of files
-        '''
+            altcsvname(str): csv.
+            dataroot(str): path to data
+            storminfo(str): YYYYMMDD
+            varcodes(dataframe): dataframe of var codes required
+
+        Returns:
+            df(dataframe): dataframe of files
+        """
         if varcodes is not None:
             foldername = varcodes
         else:

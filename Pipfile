@@ -1,0 +1,15 @@
+[[source]]
+verify_ssl = true
+url = "https://pypi.org/simple"
+name = "pypi"
+
+[dev-packages]
+
+[requires]
+python_version = "2.7"
+
+[packages]
+pandas = "<0.19.2"
+numpy = "*"
+iris = "<1.13.0"
+os = "*"
