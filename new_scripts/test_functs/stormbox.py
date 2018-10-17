@@ -40,20 +40,18 @@ for row in df.itertuples():
     size = var2.area.str[5::]
     var2['area'] = pd.to_numeric(size)*144
     storms = var2[var2.area >= size_of_storm].reset_index(drop=True)
-    storms[['centlon','centlat']] = storms['centroid'].str.split(',',expand=True)
+    storms[['centlat','centlon']] = storms['centroid'].str.split(',',expand=True)
     for row in storms.itertuples():
-        storms['centlat'].loc[row[0]] = lon[int(pd.to_numeric(row.centlat))]
-        storms['centlon'].loc[row[0]] = lat[int(pd.to_numeric(row.centlon[9::]))]
+        storms['centlat'].loc[row[0]] = lat[int(pd.to_numeric(row.centlat[9::]))]
+        storms['centlon'].loc[row[0]] = lon[int(pd.to_numeric(row.centlon))]
     storms = storms[storms.centlon <= x2].reset_index(drop=True)
     storms = storms[storms.centlon >= x1].reset_index(drop=True)
     storms = storms[storms.centlat <= y2].reset_index(drop=True)
     storms = storms[storms.centlat >= y1].reset_index(drop=True)
     # Any in this file?
     if len(storms)==0:
-        print('not here')
         continue
     print('found one')
-    print(row)
     stormsdf = pd.DataFrame(columns=varslist)
     stormsdf.stormid = storms.no
     stormsdf.year = pd.to_datetime(df.file[10][86:98]).year

@@ -22,8 +22,9 @@ Attributes:
 
 
 import glob
-import numpy as np
 import iris
+import pandas as pd
+from tqdm import tqdm
 
 
 class storminbox(object):
@@ -38,12 +39,12 @@ class storminbox(object):
         y2(int): latitude index North
         size_of_storm(int): size of storm in km e.g 5000
     '''
-    def __init__(self, x1, x2, y1, y2, size_of_storm):
+    def __init__(self, x1, x2, y1, y2, size_of_storm, idstring):
 
         self.varslist = ['stormid', 'year', 'month', 'day', 'hour', 'llon',
                          'ulon', 'llat', 'ulat', 'centlon', 'centlat', 'area',
                          'mean_olr']
-        stormsdf = pd.DataFrame(columns=self.varlist)
+        stormsdf = pd.DataFrame(columns=self.varslist)
         fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
                  'ah261_4km_200012070030-200012072330.nc')
         cube = iris.load(fname)[1]
@@ -51,35 +52,63 @@ class storminbox(object):
         lat = cube.coord('latitude').points.tolist()
         froot = '/nfs/a277/IMPALA/data/4km/precip_tracking_12km_hourly/'
         df = pd.DataFrame()
-        df['file'] = (glob.glob(froot+'*/a04203*4km*.txt'))
         df2 = pd.DataFrame(columns=['file'], index=[range(0, len(df))])
-        # The data frame lists every file but we only want june to october
-        for row in df.itertuples():
-            if row.file[90:92] in [str(x).zfill(2) for x in range(6, 10)]:
-                df2.loc[row[0]] = 0
-                df2['file'].loc[row[0]] = row.file
+        df['file'] = (glob.glob(froot+'*/a04203*4km*.txt'))
+        for rw in df.itertuples():
+            if rw.file[90:92] in [str(x).zfill(2) for x in range(6, 10)]:
+                df2.loc[rw[0]] = 0
+                df2['file'].loc[rw[0]] = rw.file
         df = df2.reset_index(drop=True)
         # Storms we want have this infor
         cols = ['storm', 'no', 'area', 'centroid', 'box', 'life', 'u', 'v',
                 'mean', 'min', 'max', 'accreted', 'parent', 'child', 'cell']
-        for row in df.itertuples():
-            vars = pd.read_csv(row.file, names=cols,  header=None,
+        print('generated file list...')
+        for row in tqdm(df.itertuples(), total=len(df), unit="file"):
+            cfile = row.file  # current file
+            vari = pd.read_csv(cfile, names=cols,  header=None,
                                delim_whitespace=True)
             # the txt files have stoms and then child cells with surplus info
-            var2 = vars[pd.notnull(vars['mean'])]
+            var2 = vari[pd.notnull(vari['mean'])]
             size = var2.area.str[5::]
-            var2['area'] = pd.to_numeric(size)*144
+            var2.loc[:, 'area'] = pd.to_numeric(size)*144
             # If it meets our size criteria
             storms = var2[var2.area >= size_of_storm].reset_index(drop=True)
             # And is the centroid in our location
-            storms['centroid']
+            storms[['centlat', 'centlon']] = storms['centroid'].str.split(',', expand=True)
+            # centroid lat and lon are reffering to indicies written by matlab
+            # i.e. +1 to the indice in python.
+            for rw2 in storms.itertuples():
+                storms['centlon'].loc[rw2[0]] = lon[int(pd.to_numeric(rw2.centlon)-1)]
+                storms['centlat'].loc[rw2[0]] = lat[int(pd.to_numeric(rw2.centlat[9::])-1)]
+            storms = storms[storms.centlon <= x2].reset_index(drop=True)
+            storms = storms[storms.centlon >= x1].reset_index(drop=True)
+            storms = storms[storms.centlat <= y2].reset_index(drop=True)
+            storms = storms[storms.centlat >= y1].reset_index(drop=True)
+            # Any in this file?
+            if len(storms.index) == 0:
+                continue
             # lets create a data frame of the varslist components
             # join DataFrame to stormsdf and move on to next file.
             # Make a dataframe to fill this time steps storm data
-            stormsdf2 = pd.DataFrame(columns=self.varlist)
+            stormsdf2 = pd.DataFrame(columns=self.varslist)
             stormsdf2.stormid = storms.no
-            datestamp = pd.to_datetime(row.file[86:98])
+            datestamp = pd.to_datetime(cfile[86:98])
+            stormsdf2.month = datestamp.month
+            stormsdf2.day = datestamp.day
+            stormsdf2.hour = datestamp.hour
             stormsdf2.year = datestamp.year
+            stormsdf2.area = storms.area
+            stormsdf2.mean_olr = storms['mean'].str[5::]
+            # box: defines the rectangle around the storm
+            # [minlatix, minlonix, nlats, nlons]
+            # llat, llon, ulat, ulon
+            storms[['llat', 'llon', 'nlat', 'nlon']] = storms['box'].str.split(',', expand=True)
+            stormsdf2.llon = pd.to_numeric(storms.llon) - 1
+            stormsdf2.llat = pd.to_numeric(storms.llat.str[4::]) - 1
+            stormsdf2.ulon = (pd.to_numeric(storms.nlon)
+                              + pd.to_numeric(storms.llon) - 1)
+            stormsdf2.ulat = (pd.to_numeric(storms.nlat) +
+                              pd.to_numeric(storms.llat.str[4::]) - 1)
             # Append to whole area
             stormsdf = pd.concat([stormsdf, stormsdf2]).reset_index(drop=True)
         stormsdf.to_csv(idstring + 'storms_over_box_area' + str(size_of_storm)
