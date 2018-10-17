@@ -24,13 +24,13 @@ Attributes:
 
 
 import glob
-import iris
-import numpy as np
-import pandas as pd
 from tqdm import tqdm
 import multiprocessing
 import copy_reg as copyreg
+import pandas as pd
+import numpy as np
 import types
+import iris
 
 
 def _pickle_method(m):
@@ -68,11 +68,13 @@ def parallelize_dataframe(df, func, nice):
 def yes_or_no(question):
     reply = str(input(question+' (y/n): ')).lower().strip()
     if reply[0] == 'y':
-        return True
-    if reply[0] == 'n':
-        return False
+        answ = True
+    elif reply[0] == 'n':
+        answ = False
     else:
-        return yes_or_no("You did not enter one of 'y' or 'n'. Assumed 'n'.")
+        print("You did not enter one of 'y' or 'n'. Assumed 'n'.")
+        answ = False
+    return answ
 
 
 class storminbox(object):
@@ -106,6 +108,7 @@ class storminbox(object):
         self.cols = ['storm', 'no', 'area', 'centroid', 'box', 'life', 'u',
                      'v', 'mean', 'min', 'max', 'accreted', 'parent', 'child',
                      'cell']
+        self.froot = '/nfs/a277/IMPALA/data/4km/precip_tracking_12km_hourly/'
 
     def create_dataframe(self):
         """Description
@@ -117,18 +120,17 @@ class storminbox(object):
        Returns:
        df(DataFrame): A data frame of storm file names
         """
-        froot = '/nfs/a277/IMPALA/data/4km/precip_tracking_12km_hourly/'
         df = pd.DataFrame()
         df2 = pd.DataFrame(columns=['file'], index=[range(0, len(df))])
-        df['file'] = (glob.glob(froot+'*/a04203*4km*.txt'))
+        df['file'] = (glob.glob(self.froot+'*/a04203*4km*.txt'))
         for rw in df.itertuples():
             if rw.file[90:92] in [str(x).zfill(2) for x in range(6, 10)]:
                 df2.loc[rw[0]] = 0
                 df2['file'].loc[rw[0]] = rw.file
-        self.df = df2.reset_index(drop=True)
+        df = df2.reset_index(drop=True)
         # Storms we want have this infor
         print('generated file list...')
-        return self.df
+        return df
 
     def find_the_storms(self, df):
         '''find the storms
@@ -191,7 +193,7 @@ class storminbox(object):
                               pd.to_numeric(storms.llat.str[4::]) - 1)
             # Append to whole area
             stormsdf = pd.concat([stormsdf, stormsdf2]).reset_index(drop=True)
-        return sotrmsdf
+        return stormsdf
 
     def genstormboxcsv(self, nice=4, shared='Y'):
         '''generate storms csvs
@@ -210,22 +212,18 @@ class storminbox(object):
             nice = 4
 
         if nice == 2 and shared == 'Y':
-            yes_or_no(('***WARNING***: You are asking to use half a shared computer \
+            ans = yes_or_no(('***WARNING***: You are asking to use half a shared computer \
             consider fair use of shared resources, do you wish to continue?\
             Y or N'))
 
-        if not ans:
-            print('Please revise nice number to higher value and try again...')
-            return
+            if not ans:
+                print('Please revise nice number to higher value and try again...')
+                return
 
         df = self.create_dataframe()
-        stormsalldf = pd.DataFrame(columns=self.varslist)
         pstorms = parallelize_dataframe(df, self.find_the_storms, nice)
-        pstorms.to_csv(idstring + 'storms_over_box_area' +
+        pstorms.to_csv(self.idstring + 'storms_over_box_area' +
                        str(self.size_of_storm)
                        + '_lons_' + str(self.x1) + '_' + str(self.x2) +
                        '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')
-        return print('generated idstring + 'storms_over_box_area' +
-                       str(self.size_of_storm)
-                       + '_lons_' + str(self.x1) + '_' + str(self.x2) +
-                       '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')
+
