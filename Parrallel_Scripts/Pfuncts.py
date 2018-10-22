@@ -23,7 +23,6 @@ import pandas as pd
 import numpy as np
 
 
-
 def _pickle_method(m):
     '''Taken from
     https://laszukdawid.com/2017/12/13/multiprocessing-in-python-all-about-pickling/

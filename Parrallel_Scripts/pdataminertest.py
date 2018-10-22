@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 '''
 New data miner script based off:
 dataminer_1800z_all_stats_CAPE.py
@@ -9,23 +10,22 @@ STAGE 1 : remove requirement for folder structure
 from os.path import expanduser
 import numpy as np
 from numpy import genfromtxt as gent
-from pdataminer_funcs import dmfuctions
+from pdataminer_funcs import dm_functions
 
 # Variables
 size_of_storm = 5000
 x1, x2 = [345, 375]
 y1, y2 = [10, 18]
-csvroot = ('testfc', ' testcc')
+fcorcc = 0
+csvroot = ('ptestfc', ' ptestcc')
 dataroot = ('/nfs/a299/IMPALA/data/fc/4km/', '/nfs/a277/IMPALA/data/4km/')
 stormhome = expanduser("~")+'/AMMA2050'
-csvname = (stormhome + '/fc_storms_to_keep_area_' + str(size_of_storm) +
+run = ('fc_storms_to_keep_area_', 'cc_storms_to_keep_area_')
+csvname = (stormhome + '/' + run[0] + str(size_of_storm) +
            '_longitudes_' + str(x1) + '_' + str(x2) + '_' + str(y1) + '_' +
            str(y2) + '_1800Z.csv')
-altcsvname = (stormhome + '/CP4_FC_precip_storms_over_box_area_' +
-              str(size_of_storm) + '_lons_' + str(x1) + '_' + str(x2) +
-              '_lat_' + str(y1) + '_' + str(y2) + '.csv')
 # Generating file list
-dmf = dmfuctions(x1, x2, y1, y2, size_of_storm, dataroot[0])
+dmf = dm_functions(dataroot[fcorcc])
 # find storms
 try:
     storms_to_keep = gent(csvname, delimiter=',')
@@ -34,4 +34,4 @@ except IOError:
     # if its not there we'll have to generate it from CP4
     storms_to_keep = dmf.gen_storms_to_keep(csvname)
     np.savetxt(csvname, storms_to_keep[:, :], delimiter=',')
-dmf.genvarscsv(csvname, csvroot[0], storms_to_keep)
+dmf.genvarscsv(csvroot[fcorcc], storms_to_keep)
