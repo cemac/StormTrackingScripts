@@ -408,7 +408,6 @@ class dm_functions(object):
                     WD = 0
                     self.calc_mass(wet, dry, idx, xy)
                     continue
-
         return self.allvars
 
     def genvarscsv(self, csvroot, storms_to_keep, nice=4, shared='Y'):
@@ -428,12 +427,14 @@ class dm_functions(object):
             nice = 4
 
         if nice == 2 and shared == 'Y':
-            ans = Pfuncts.yes_or_no(('***WARNING***: You are asking to use half a shared computer \
-            consider fair use of shared resources, do you wish to continue?\
-            Y or N'))
+            ans = Pfuncts.yes_or_no(('***WARNING***: You are asking to use '
+                                     'half a shared computer \n consider fair '
+                                     'use of shared resources, do you wish to '
+                                     'continue? \n Y or N'))
 
             if not ans:
-                print('Please revise nice number to higher value and try again...')
+                print('Please revise nice number to higher value and try '
+                      'again...')
                 return
 
         df = pd.DataFrame(storms_to_keep, columns=self.varlist)
