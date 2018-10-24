@@ -11,14 +11,13 @@ from skewt import SkewT as sk
 import pandas as pd
 
 
-
-def main(xstart,xend,ystart,yend,size_of_storm):
+def main(xstart, xend, ystart, yend, size_of_storm):
 
  C4_FC_list = []
  C4_CC_list = []
  flelist = glob.glob('/nfs/a65/eejac/VERA/IMPALA/olr_tracking_12km/stats/WAfrica_Rory/*/*.txt')
  for element in range(0, len(flelist)):
-        if 'fc'  in flelist[element]:
+        if 'fc' in flelist[element]:
             print [element]
                 fle = pd.read_fwf(flelist[element])
                 datu = np.asarray(fle)
@@ -37,7 +36,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
                         #        C2_list.extend([datu[rw,0]])
  CC_storm_IDs = gent('../csvs/PAPER_CC_C2C4_STORMID_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', delimiter = ',')
 
- 
+
  CAPE_stats = np.zeros((len(np.ndarray.tolist(CC_storm_IDs)),6),float)
  try:
      storms_to_keep = gent('../OLR_12km_storms_to_keep_area_'+str(size_of_storm)+'_longitudes_'+str(xstart)+'_'+str(xend)+'_'+str(ystart)+'_'+str(yend)+'_1800Z.csv', delimiter = ',')
@@ -177,12 +176,12 @@ def main(xstart,xend,ystart,yend,size_of_storm):
                     cube_v = cube_v.collapsed(['latitude','longitude'], iris.analysis.MEAN)
                     # What we want now is the direction and speed of the winds
                     #                wind_abs = (cube_u**2 + cube_v**2)**0.5
-    
+
                     cube_T15 = fle_T15[11,:,:].extract(xysmallslice)
                     cube_T15 = cube_T15.collapsed(['latitude','longitude'],iris.analysis.MEAN)
                     cube_q15 = fle_q15[11,:,:].extract(xysmallslice)
                     cube_q15 = cube_q15.collapsed(['latitude','longitude'],iris.analysis.MEAN)
-                    if q > 975:                
+                    if q > 975:
                             xysmallslice_850_upwards = iris.Constraint(pressure = lambda cell: 975. >= cell>=100., longitude = lambda cell: float(llo) <= cell <= float(ulo), latitude = lambda cell: float(lla) <= cell <= float(ula))
                     else:
                             xysmallslice_850_upwards = iris.Constraint(pressure = lambda cell: float(q) >= cell>=100., longitude = lambda cell: float(llo) <= cell <= float(ulo), latitude = lambda cell: float(lla) <= cell <= float(ula))
@@ -228,7 +227,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
                         all_cube = np.zeros((1, len(pressures), 9), float)
                     else:
                         temp_cube = np.zeros((1, len(pressures), 9), float)
-                
+
                     if len(pressures) == 18:
                         for p in range(0, len(pressures)):
                             if 710. >= pressures[p] > 690.:
@@ -244,21 +243,15 @@ def main(xstart,xend,ystart,yend,size_of_storm):
                                     all_cube[0,p,1] = cube_T[p].data*((cube_mslp.data/cube_pressures.data[p])**(1./5.257) - 1)/0.0065
                                 else:
                                     temp_cube[0,p,1] = cube_T[p].data*((cube_mslp.data/cube_pressures.data[p])**(1./5.257) - 1)/0.0065
-        
                             else:
                                 if all_cube.shape[0] == 1:
                                     all_cube[0,p,1] = 1.5
                                 else:
                                     temp_cube[0,p,1] = 1.5
-    
+
     # So, here we also want to compute CAPE and CIN for each storm
-    
-    
-    
-    
-    
                         print cube_pressures.data
-    
+
                         if all_cube.shape[0] == 1:
                             all_cube[0,:,0] = cube_pressures.data/100
                             all_cube[0,:,2] = cube_T.data
@@ -279,7 +272,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
                             CAPE_stats[cntr,5] = storms_to_keep[rw,8]
                             print all_cube[0,::-1,1], CAPE
                             cntr = cntr + 1
-    
+
                         else:
                             temp_cube[0,:,0] = cube_pressures.data/100
                             temp_cube[0,:,2] = cube_T.data
@@ -301,7 +294,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
                             CAPE_stats[cntr,5] = storms_to_keep[rw,8]
                             cntr = cntr + 1
                         try:
-                        #if all_cube.shape[0] > 1:
+                        # if all_cube.shape[0] > 1:
                             if temp_cube.shape[1] == all_cube.shape[1]:
                                 all_cube = np.concatenate((all_cube, temp_cube), axis = 0)
                         except UnboundLocalError or ValueError:

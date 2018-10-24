@@ -34,19 +34,10 @@ class stormcalcs(object):
        Stage 1: currently a suit of functions for finding information on
        storms in region and Generating cvs files of that information.
 
-       Attributes:
-        x1(int): longitude index East
-        x2(int): longitude index West
-        y1(int): latitude index South
-        y2(int): latitude index North
-        size_of_storm(int): size of storm in km e.g 5000
-        midday_mslp  midday_wind  midday_wind3  eve_mslp_mean  eve_wind_mean
-        eve_wind3_mean  eve_mslp_1p  eve_wind_99p  eve_wind3_99p  mean_T15_1200
-        mass_mean_1200  mass_mean_1800  precip_99th_perc  precip_accum
-        col_w_mean  col_w_p99  OLRs  OLR_10_perc  OLR_1_perc  area
     '''
-    def __init__(self, csvname):
+    def __init__(self, csvname, altcsvname=None):
 
+        fname = self.csvname
         df = pd.read_csv(csvname, sep=',')
         cold = df.mean_T15_1800 - df.mean_T15_1200
         mslp_diff = df.eve_mslp_mean - df.midday_mslp

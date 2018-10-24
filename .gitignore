@@ -5,3 +5,6 @@ csvs
 *.pyc
 .outline.md
 new_scripts/test_functions
+build/
+source/
+Makefile

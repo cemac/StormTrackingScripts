@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 import pstromsinabox
 x1, x2 = [345, 375]
 y1, y2 = [10, 18]
