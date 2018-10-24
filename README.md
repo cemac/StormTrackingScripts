@@ -1,6 +1,6 @@
 # StormTrackingScripts #
 
-[![GitHub release](https://img.shields.io/badge/release-v.1.0-blue.svg)(
+[![GitHub release](https://img.shields.io/badge/release-v.1.0-blue.svg)](
 https://github.com/cemac/StormTrackingScripts/releases/tag/v.1.0)
 
 **ORIGINAL VERSION**
