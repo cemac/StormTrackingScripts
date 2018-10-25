@@ -118,7 +118,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  checker = 0
  killlist = []
  for i in range(0,len(all_cube_stormid_FC)):
-	if all_cube_stormid_FC[i] in all_cube_STRMID_FC: 
+	if all_cube_stormid_FC[i] in all_cube_STRMID_FC:
 		checker = checker + 1
 	else:
 		killlist.extend([i])
@@ -158,7 +158,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  checker = 0
  killlist = []
  for i in range(0,len(all_cube_CAPE_FC)):
-	if all_cube_CAPE_FC[i] > 100 and all_cube_max_w_1800_fc[i] > 0: 
+	if all_cube_CAPE_FC[i] > 100 and all_cube_max_w_1800_fc[i] > 0:
 		checker = checker + 1
 	else:
 		killlist.extend([i])
@@ -200,7 +200,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
 
  killlist = []
  for i in range(0,len(all_cube_stormid_CC)):
-	if all_cube_stormid_CC[i] in all_cube_STRMID_CC: 
+	if all_cube_stormid_CC[i] in all_cube_STRMID_CC:
 		checker = checker + 1
 	else:
 		killlist.extend([i])
@@ -240,7 +240,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  checker = 0
  killlist = []
  for i in range(0,len(all_cube_CAPE_CC)):
-	if all_cube_CAPE_CC[i] > 100 and all_cube_max_w_1800_cc[i] > 0: 
+	if all_cube_CAPE_CC[i] > 100 and all_cube_max_w_1800_cc[i] > 0:
 		checker = checker + 1
 	else:
 		killlist.extend([i])
@@ -573,8 +573,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  plt.title('(f) - CC correl = '+str(correlfirst_cc)+', FC correl = '+str(correlfirst_fc), loc = 'right', fontsize = 8)
 
  plt.subplots_adjust(hspace = 0.6, wspace = 0.3)
- plt.show()
-
+ plt.savefig('fig1.png')
  #Okay, so now we want to look at the PDFs of shear across climates
  plt.clf()
  plt.subplot(3,4,1)
@@ -775,7 +774,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  plt.scatter(mean_depfc, 0 , c = 'b')
  plt.xlabel('1800 UTC 1-hour total rainfall (kg)')
  plt.legend(fontsize = 8)
- 
+
 
  plt.subplot(3,4,11)
  depcc = all_cube_area_cc*100*100/1000000
@@ -820,7 +819,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
 
 
  plt.subplots_adjust(hspace = 0.8, wspace = 0.3, top = 0.95)
- plt.show()
+ plt.savefig('fig2.png')
 
  # right next is to do the other scatter relationships
 
@@ -1137,7 +1136,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
 
 
  plt.subplots_adjust(hspace = 0.6, wspace = 0.6, top = 0.95, right = 0.95)
- plt.show()
+ plt.savefig('fig3.png')
 
 
  plt.clf()
@@ -1189,7 +1188,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  plt.ylabel('precip/(TCWV x omega)')
  plt.xlabel('SBCAPE')
 
- plt.show()
+ plt.savefig('fig4.png')
 
  TCW_bins = np.linspace(np.min([np.min(all_cube_TCW_1800_cc[:]),np.min(all_cube_TCW_1800_fc[:])]), np.max([np.max(all_cube_TCW_1800_cc[:]),np.max(all_cube_TCW_1800_fc[:])]), 25)
  cold_pool_bins = np.linspace(np.min([np.min(all_cube_cold_pool_cc[:]),np.min(all_cube_cold_pool_fc[:])]), np.max([np.max(all_cube_cold_pool_cc[:]),np.max(all_cube_cold_pool_fc[:])]), 25)
@@ -1200,7 +1199,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  u10_bins = np.arange(0,25,1)
 # shear_bins = np.linspace(np.min([np.min(all_cube_horizontal_shear_cc[:]),np.min(all_cube_horizontal_shear_fc[:])]), np.max([np.max(all_cube_horizontal_shear_cc[:]),np.max(all_cube_horizontal_shear_fc[:])]), 25)
 # u10_bins = np.linspace(np.min([np.min(all_cube_10u_1800_cc[:]),np.min(all_cube_10u_1800_fc[:])]), np.max([np.max(all_cube_10u_1800_cc[:]),np.max(all_cube_10u_1800_fc[:])]), 25)
- a = 25 
+ a = 25
  both_climates_histogram = np.zeros((int(25),int(25),2),float)
  for element in range(0, len(all_cube_TCW_1800_cc)):
         OMEGA = all_cube_min_omega_1800_cc[element]
@@ -1314,7 +1313,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  plt.ylabel('1800 UTC 99th percentile \n 10-m wind speed (m/s)')
  plt.title('(c)', x = 0.01, fontsize = 10)
  plt.subplots_adjust(hspace = 0.4, wspace = 0.4)
- plt.show()
+ plt.savefig('fig5.png')
 
  # NOW  DO THE COLD POOL WORK
  depcc =  all_cube_cold_pool_cc
@@ -1414,7 +1413,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  else:
 	 plt.plot(np.unique(depfc), np.poly1d(np.polyfit(depfc,indfc,1))(np.unique(depfc)),color ='k', linestyle = '--',label = 'FC Correl '+str(correlfirst))
  plt.legend(fontsize = 9)
- plt.show()
+ plt.savefig('fig6.png')
 
  # Now do the PDFs of cold pool factors
  plt.clf()
@@ -1570,7 +1569,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
  plt.xlabel('1800Z mean 10-meter \n wind speed cubed [w.s.c.] (m3/s3)')
  plt.legend(fontsize = 8)
  plt.subplots_adjust(hspace = 0.5, wspace = 0.4)
- plt.show()
+ plt.savefig('fig7.png')
 # all_cube_T15_1800_fc = np.delete(all_cube_T15_1800_fc, killlist, axis = 0)
 # all_cube_mslp_1800_fc = np.delete(all_cube_mslp_1800_fc, killlist, axis = 0)
 # all_cube_10u_1800_fc = np.delete(all_cube_10u_1800_fc, killlist, axis = 0)
