@@ -2,19 +2,19 @@
 # for our CAPE calculations.
 # Looking at the literature, we need pressure, temperature, dewpoint temperature, height, and specific humidity (g/kg)
 # for all the intense storms. We will use the pressure values 850 hPa upwards in order to remove the issues with 925 hPa T values for some storms.
-#import iris
+import iris
 import scipy.stats as stat
 import numpy as np
 from numpy import genfromtxt as gent
 import matplotlib.pyplot as plt
-#from iris.experimental.equalise_cubes import equalise_attributes
+from iris.experimental.equalise_cubes import equalise_attributes
 import collections
 from matplotlib import colors
 import glob
 import meteocalc
 import skewt
 from skewt import SkewT as sk
-#from skewt import SkewT
+from skewt import SkewT
 import pandas as pd
 import metpy.calc as metcalc
 from metpy.plots import add_metpy_logo, SkewT
@@ -231,8 +231,8 @@ def main(xstart,xend,ystart,yend,size_of_storm):
 				cube_v = fle_v[3,:,:]
 				cube_u = cube_u.collapsed(['latitude','longitude'], iris.analysis.MEAN)
 				cube_v = cube_v.collapsed(['latitude','longitude'], iris.analysis.MEAN)
-# What we want now is the direction and speed of the winds
-#				wind_abs = (cube_u**2 + cube_v**2)**0.5
+                # What we want now is the direction and speed of the winds
+                # abs = (cube_u**2 + cube_v**2)**0.5
 
 				cube_T15 = fle_T15[11,:,:].extract(xysmallslice)
 				cube_T15 = cube_T15.collapsed(['latitude','longitude'],iris.analysis.MEAN)
@@ -245,8 +245,8 @@ def main(xstart,xend,ystart,yend,size_of_storm):
 				cube_T = fle_T[3,:,:].extract(xysmallslice_850_upwards)
 				cube_q = fle_q[3,:,:].extract(xysmallslice_850_upwards)
 				pressure_shape = cube_T.data.shape[0]
-				#all_cube = cube_T[:,:7,1]
-# Because we are now using near the surface, we want to make sure that T is realistic
+				# all_cube = cube_T[:,:7,1]
+                # Because we are now using near the surface, we want to make sure that T is realistic
 				T_data = cube_T.data
 				q_data = cube_q.data
 				T_collapsed = np.zeros((T_data.shape[0]),float)

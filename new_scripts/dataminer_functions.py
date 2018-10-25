@@ -406,6 +406,7 @@ class dm_functions(object):
         self.allvars.to_csv(csvroot+'test4.csv')
         return
 
+
 def genslice(llon, llat, ulat, ulon, n1=None, n2=None):
     '''Description:
         Extrac iris cube slices of a variable
