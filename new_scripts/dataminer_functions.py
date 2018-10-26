@@ -26,6 +26,8 @@ import numpy as np
 from numpy import genfromtxt as gent
 import pandas as pd
 from tqdm import tqdm
+import meteocalc
+from skewt import SkewT as sk
 
 
 # Stand alone methods
@@ -68,6 +70,10 @@ class dm_functions(object):
         self.vars = pd.read_csv('vars.csv')
         self.evemid = [11, 17]
         self.allvars = pd.read_csv('all_vars_template.csv')
+        vari = ['pressure', 'T' 'dewpT', 'height', 'Q', 'z', 'RH650']
+        self.tephidf = pd.DataFrame(columns=vari)
+        vari = ['P_lcl', 'P_lfc', 'P_el', 'CAPE', 'CIN']
+        self.capedf = pd.DataFrame(columns=vari)
 
     def gen_storms_to_keep(self, altcsvname):
         """Generate storms to keep csvs
@@ -96,10 +102,11 @@ class dm_functions(object):
         # wirte out a csv file?
         return storms_to_keep
 
-    def gen_flist(self, storminfo, varcodes=None):
+    def gen_flist(self, storminfo, varnames, varcodes=None):
         """Generate filelist
         Attributes:
             storminfo(str): YYYYMMDD
+            varnames(DataFrame):  dataframe of corresponding varnames
             varcodes(dataframe): dataframe of var codes required
         Returns:
             df(dataframe): dataframe of files
@@ -116,12 +123,12 @@ class dm_functions(object):
                 df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
                                        + '/' + str(foldername[i]) + '*_' +
                                        str(storminfo) + '*-*.nc')[0],
-                             foldername[i]]
+                             foldername[i], varnames[i]]
             except IndexError:
                 pass
         return df
 
-    def mean99(self, var, str1200, strmean, str99p, idx, p=99):
+    def mean99(self, var, strings, idx, p=99):
         '''Description:
             Find the mean for the midday slice and the Nth PERCENTILE of an
             iris and mean of cube variable for the eveing slice
@@ -134,6 +141,7 @@ class dm_functions(object):
                 idx(int): row index
                 p(int): PERCENTILE normally 1 or 99
         '''
+        str1200, strmean, str99p = strings
         for num in self.evemid:
             varn = var[num, :, :]
             varmean = cubemean(varn).data
@@ -144,26 +152,26 @@ class dm_functions(object):
                 self.allvars[strmean].loc[idx] = varmean
                 self.allvars[str99p].loc[idx] = var99p
 
-    def calc_t15(self, var, idx):
+    def calc_t15(self, t15f, xy, idx):
         '''Description: mean99 for T15 variable
             Attributes:
                 var: iris cube variable
                 idx: row index
         '''
-        self.mean99(var, 'mean_T15_1200', 'mean_T15_1800', '1perc_T15_1800',
-                    idx, p=1)
+        t15 = iris.load_cube(t15f).extract(xy)
+        strings = ['mean_T15_1200', 'mean_T15_1800', '1perc_T15_1800']
+        self.mean99(t15, strings, idx, p=1)
 
-    def calc_mslp(self, fname, smslice, idx):
+    def calc_mslp(self, fname, xy, idx):
         '''Description:
         Find the mean of an iris cube variable
         Attributes:
             fname(str): file to load cube from
-            smslice: cube slice
             idx(int): index
         '''
-        allvari = iris.load_cube(fname, smslice)
-        self.mean99(allvari, 'midday_mslp', 'eve_mslp_mean',
-                    'eve_mslp_1p', idx)
+        allvari = iris.load_cube(fname, xy)
+        strings = ['midday_mslp', 'eve_mslp_mean', 'eve_mslp_1p']
+        self.mean99(allvari, strings, idx)
 
     def calc_winds(self, u, v, idx):
         '''Description: Calculate winds for eveing and midday using u and v.
@@ -189,7 +197,7 @@ class dm_functions(object):
                     self.allvars['eve_wind3_mean'].loc[idx] = mwind2
                     self.allvars['eve_wind3_99p'].loc[idx] = mwind1p
 
-    def calc_tow(self, T, omega, idx):
+    def calc_tow(self, of, Tf, xy600, idx):
         '''Description: Calculate bouyancy, omega and max for eveing midday etc
             Attributes:
                 T: iris cube variable T
@@ -198,6 +206,8 @@ class dm_functions(object):
         '''
         R_GAS = 287.058
         G = 9.80665
+        omega = iris.load_cube(of).extract(xy600)
+        T = iris.load_cube(Tf).extract(xy600)
         for no in [3, 5]:
             t_num = T[no, :, :, :]
             o_num = omega[no, :, :, :]
@@ -228,13 +238,20 @@ class dm_functions(object):
                 self.allvars['buoyancy_1800_1p'].loc[idx] = b_1p
                 self.allvars['max_w_1800'].loc[idx] = wnum
 
-    def calc_shear(self, lowu, highu, lowv, highv, idx):
+    def calc_shear(self, filenames, xylw, xyhi, idx):
         '''Description: Find max horizontal shear
             Attributes:
                 lowu, low v: iris cube variable low pressure velocities
                 high u, hugh v: iris cube variable high pressure velocities
                 idx(int): row index
         '''
+        uf, vf = filenames
+        u10 = iris.load_cube(uf)
+        v10 = iris.load_cube(vf)
+        highu = cubemean(u10.extract(xyhi)[3, :, :, :])
+        lowu = cubemean(u10.extract(xylw)[3, :, :, :])
+        highv = cubemean(v10.extract(xyhi)[3, :, :, :])
+        lowv = cubemean(v10.extract(xylw)[3, :, :, :])
         lowup = lowu.collapsed(['pressure'], iris.analysis.MAX)
         hiup = highu.collapsed(['pressure'], iris.analysis.MIN)
         mshear = lowup.data - hiup.data
@@ -253,7 +270,7 @@ class dm_functions(object):
                     maxcheck = shearval
         self.allvars['hor_shear'].loc[idx] = maxcheck
 
-    def calc_mass(self, wet, dry, idx, smslice):
+    def calc_mass(self, wetf, dryf, xy, idx):
         '''Description:
             Calculate midday and eveing mass
             Attributes:
@@ -261,9 +278,11 @@ class dm_functions(object):
         dry: iris cube variable
         idx: row index
         '''
+        wet = iris.load_cube(wetf).extract(xy)
+        dry = iris.load_cube(dryf).extract(xy)
         mass = wet
         mass.data = wet.data + dry.data
-        mass.extract(smslice)
+        mass.extract(xy)
         for num in self.evemid:
             massn = mass[num, :, :]
             massm = cubemean(massn).data
@@ -272,7 +291,99 @@ class dm_functions(object):
             else:
                 self.allvars['mass_mean_1800'].loc[idx] = massm
 
-    def gen_var_csvs(self, csvroot, storms_to_keep):
+    def calc_cape(self, fnamelist, u, v, precip99, xy, idx, latlons):
+        r'''Description:
+            Variable required to calculate Convective Available Potential
+            Energy: $\int_{zf}^{zn} g
+            \left( \frac{T_{v, parcel} - T_{v,env}}{T_{v,env}}\right)
+            \mathrm{d}z$
+            If > 0 storms possible if enough moisture
+            Attributes:
+                idx: row index
+            Returns:
+            CAPE(dataframe): dataframe containing Vars for cape calculations
+            TEPHI(dataframe): dataframe containg vars for tephigrams
+        '''
+        Qf, Q15f, Tf, T15f = fnamelist
+        q15 = iris.load_cube(Q15f)
+        q15 = q15[11, :, :].extract(xy)
+        T15 = cubemean(iris.load_cube(T15f)[11, :, :].extract(xy))
+        xwind = cubemean(u[3, :, :])
+        ywind = cubemean(v[3, :, :])
+        P = self.allvars['eve_mslp_mean'].loc[idx]/100
+        # ? 975 is a max value ?
+        T = iris.load_cube(Tf)
+        q = iris.load_cube(Qf)
+        if P > 975:
+            P = 975
+        xy850 = genslice(latlons, n1=P, n2=100)
+        T = T[3, :, :].extract(xy850)
+        q = q[3, :, :].extract(xy850)
+        Tp = T.data
+        Qp = q.data
+        # get rid of values sub 100?
+        Tp[Tp < 100] = np.nan
+        Qp[Qp < 100] = np.nan
+        Tcol = np.zeros(Tp.shape[0])
+        Qcol = np.zeros(Tp.shape[0])
+        for p in range(0, Tp.shape[0]):
+            Tcol[p] = np.nanmean(Tp[p, :, :])
+            Qcol[p] = np.nanmean(Qp[p, :, :])
+        Tcol = cubemean(Tcol)
+        Qcol = cubemean(Qcol)
+        T.data = Tcol
+        q.data = Qcol
+        pressure = T.coord('pressure').points
+        pressure = pressure.extend([P])
+        pval = T.data.shape[0] + 1
+        f_T = T[3, : pval, 1, 1]
+        f_q = q[3, : pval, 1, 1]
+        f_T.data[:pval] = Tcol
+        f_T.data[pval] = T15.data
+        f_q.data[:pval] = Qcol
+        f_q.data[pval] = cubemean(q15).data
+        t = f_T
+        pres = f_q
+        f_q.data = pressure*100
+        pressures = f_q.data
+        height = np.zeros((len(pressures)))
+        dwpt = np.zeros((len(pressures)))
+        if len(pressure == 18):
+            for p in range(0, len(pressures)):
+                if 710. >= pressures[p] > 690.:
+                    RH_650 = ([(0.263 * pres.data[p] * pressures.data[p])
+                               / 2.714**((17.67*(t.data[p] - 273.16)) /
+                                         (t.data[p] - 29.65))])
+                T = (0.263 * pres.data[p] *
+                     pressures.data[p])/2.714**((17.67*(t.data[p] -
+                                                        273.16))/(t.data[p]
+                                                                  - 29.65))
+                dwpt[p] = meteocalc.dew_point(temperature=t[p].data - 273.16,
+                                              humidity=T)
+                if p < len(pressures)-1:
+                    height[p] = (t[p].data*((100*P /
+                                             pressures.data[p])**(1./5.257)
+                                            - 1)
+                                 / 0.0065)
+                else:
+                    height[p] = 1.5
+
+        self.tephidf['pressure'].loc[idx] = np.average(pressure, axis=0)
+        self.tephidf['T'].loc[idx] = np.average(T, axis=0)
+        self.tephidf['dewpT'].loc[idx] = np.average(dwpt, axis=0)
+        self.tephidf['height'].loc[idx] = np.average(height, axis=0)
+        self.tephidf['Q'].loc[idx] = np.average(q, axis=0)
+        self.tephidf['p99'].loc[idx] = np.average(precip99, axis=0)
+        self.tephidf['xwind'].loc[idx] = np.average(xwind, axis=0)
+        self.tephidf['ywind'].loc[idx] = np.average(ywind, axis=0)
+        self.tephidf['RH650'].loc[idx] = RH_650
+        mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
+                          (height, pressure, T, dwpt)))
+        S = sk.Sounding(soundingdata=mydata)
+        parcel = S.get_parcel('mu')
+        self.capedf.loc[idx] = S.get_cape(*parcel)
+
+    def gen_var_csvs(self, csvroot, storms_to_keep, CAPE=None, TEPHI=None):
         '''Description: The meat of this module, from the storms listed find if
            they meet the criteria of no midday rain and 99p rainfall above 1mm.
            Then write out a dataframe of storm variabels that do meet this.
@@ -282,10 +393,6 @@ class dm_functions(object):
 
         '''
         stormsdf = pd.DataFrame(storms_to_keep, columns=self.varlist)
-        VELS = 0
-        VELS2 = 0
-        OT = 0
-        WD = 0
         # tqdm is a progress wrapper
         for row in tqdm(stormsdf.itertuples(), total=len(stormsdf),
                         unit="storm"):
@@ -293,24 +400,23 @@ class dm_functions(object):
                          str(int(row.day)).zfill(2))
             idx = row[0]
             # If any files with structure exsit
-            flist = self.gen_flist(storminfo, varcodes=self.vars['code'])
+            flist = self.gen_flist(storminfo, self.vars['varname'],
+                                   varcodes=self.vars['code'])
             if flist['file'].isnull().sum() > 0:
                 print('WARNING: Storm missing data files, skipping...')
                 continue
-            xy = genslice(row.llon, row.llat, row.ulat, row.ulon)
-            xyhi = genslice(row.llon, row.llat, row.ulat, row.ulon,
-                            n1=500, n2=800)
-            xylw = genslice(row.llon, row.llat, row.ulat, row.ulon,
-                            n1=925, n2=800)
-            xy600 = genslice(row.llon, row.llat, row.ulat, row.ulon,
-                             n1=600, n2=300)
+            latlons = [row.llon, row.llat, row.ulat, row.ulon]
+            xy = genslice(latlons)
+            xyhi = genslice(latlons, n1=500, n2=800)
+            xylw = genslice(latlons, n1=925, n2=800)
+            xy600 = genslice(latlons, n1=600, n2=300)
             # Find if precip is meets criteria
-            precipfile = flist[flist.codes == 'a04203'].file
+            precipfile = flist[flist.varname == 'precip'].file
             precip = iris.load_cube(precipfile).extract(xy)
             precipm = precip[11:15, :, :]
             precip = precip[17, :, :]
-            precip = cube99(precip)
-            precip = np.ndarray.tolist(precip)
+            precip99 = cube99(precip)
+            precip = np.ndarray.tolist(precip99)
             precipm = precipm.collapsed(['time', 'latitude', 'longitude'],
                                         iris.analysis.MEAN).data
             if precipm >= 0.1/3600. and precip <= 1.0/3600.:
@@ -324,90 +430,52 @@ class dm_functions(object):
                     (float(row.ulat) - float(row.llat)))
             self.allvars['precip_accum'].loc[idx] = pvol
             self.allvars['area'].loc[idx] = pvol / precipm
-            for rw in flist.itertuples():
-                # we've already looked at precipitation so skip
-                if rw.codes == 'a04203':
-                    continue
-                if rw.codes == ('c00409'):
-                    self.calc_mslp(rw.file, xy, idx)
-                    continue
-                elif rw.codes in 'c03225':
-                    u = iris.load_cube(rw.file, xy)
-                    VELS += 1
-                elif rw.codes in 'c03226':
-                    v = iris.load_cube(rw.file, xy)
-                    VELS += 1
-                if VELS == 2:
-                    VELS = 0
-                    self.calc_winds(u, v, idx)
-                    continue
-                var = iris.load_cube(rw.file)
-                if rw.codes in 'f30201':
-                    highu = var.extract(xyhi)[3, :, :, :]
-                    highu = cubemean(highu)
-                    lowu = var.extract(xylw)[3, :, :, :]
-                    lowu = cubemean(lowu)
-                    VELS2 += 1
-                    continue
-                if rw.codes in 'f30202':
-                    highv = var.extract(xyhi)[3, :, :, :]
-                    highv = cubemean(highv)
-                    lowv = var.extract(xylw)[3, :, :, :]
-                    lowv = cubemean(lowv)
-                    VELS2 += 1
-                    continue
-                if VELS2 == 2:
-                    VELS2 = 0
-                    self.calc_shear(lowu, highu, lowv, highv, idx)
-                    continue
-                if rw.codes == 'f30208':
-                    omega = var.extract(xy600)
-                    OT += 1
-                    continue
-                if rw.codes in 'f30204':
-                    T = var.extract(xy600)
-                    OT += 1
-                    continue
-                if OT == 2:
-                    OT = 0
-                    self.calc_tow(T, omega, idx)
-                    continue
-                var = var.extract(xy)
-                if rw.codes == 'a03332':
-                    OLR = var[17, :, :]
-                    olr_10p = cube99(OLR, per=10)
-                    olr_1p = cube99(OLR, per=1)
-                    self.allvars['OLR_10_perc'].loc[idx] = olr_10p
-                    self.allvars['OLR_1_perc'].loc[idx] = olr_1p
-                    continue
-                if rw.codes == 'a30439':
-                    varn = var[5, :, :, :]
-                    varmean = cubemean(varn).data
-                    varn99p = cube99(varn)
-                    self.allvars['col_w_mean'].loc[idx] = varmean
-                    self.allvars['col_w_p99'].loc[idx] = varn99p
-                    continue
-                if rw.codes == 'c03236':
-                    self.calc_t15(var, idx)
-                    continue
-                if rw.codes == 'c30403':
-                    WD += 1
-                    wet = var
-                    continue
-                if rw.codes == 'c30404':
-                    WD += 1
-                    dry = var
-                    continue
-                if WD == 2:
-                    WD = 0
-                    self.calc_mass(wet, dry, idx, xy)
-                    continue
+            self.calc_mslp(flist[flist.varname == 'ms1p'].file, xy, idx)
+            uf = flist[flist.varname == 'u10'].file
+            u = iris.load_cube(uf, xy)
+            vf = flist[flist.varname == 'v10'].file
+            v = iris.load_cube(vf, xy)
+            self.calc_winds(u, v, idx)
+            uf = flist[flist.varname == 'u'].file
+            uf = flist[flist.varname == 'v'].file
+            self.calc_shear([uf, vf], xylw, xyhi, idx)
+            of = flist[flist.varname == 'omega'].file
+            Tf = flist[flist.varname == 'T'].file
+            self.calc_tow(of, Tf, xy600, idx)
+            olr_f = flist[flist.varname == 'olr'].file
+            OLR = iris.load_cube(olr_f).extract(xy)
+            OLR = OLR[17, :, :]
+            olr_10p = cube99(OLR, per=10)
+            olr_1p = cube99(OLR, per=1)
+            self.allvars['OLR_10_perc'].loc[idx] = olr_10p
+            self.allvars['OLR_1_perc'].loc[idx] = olr_1p
+            colwf = flist[flist.varname == 'col_w'].file
+            colw = iris.load_cube(colwf).extract(xy)
+            varn = colw[5, :, :, :]
+            varmean = cubemean(varn).data
+            varn99p = cube99(varn)
+            self.allvars['col_w_mean'].loc[idx] = varmean
+            self.allvars['col_w_p99'].loc[idx] = varn99p
+            t15f = flist[flist.varname == 'T15'].file
+            self.calc_t15(t15f, xy, idx)
+            dryf = flist[flist.varname == 'dry_mass'].file
+            wetf = flist[flist.varname == 'wet_mass'].file
+            self.calc_mass(wetf, dryf, xy, idx)
+            if CAPE == 'Y' or TEPHI == 'Y':
+                q15f = flist[flist.varname == 'Q15'].file
+                qf = flist[flist.varname == 'Q'].file
+                fnamelist = [qf, q15f, Tf, t15f]
+                self.calc_cape(fnamelist, u, v, precip99, xy, idx, latlons)
             break
-        self.allvars.to_csv(csvroot+'test4.csv')
+        self.allvars.to_csv(csvroot+'_standard.csv')
+        if CAPE == 'Y':
+            self.capedf.to_csv(csvroot+'_cape.csv')
+        if TEPHI == 'Y':
+            self.tephidf.to_csv(csvroot+'_tephi.csv')
         return
 
 
-def genslice(llon, llat, ulat, ulon, n1=None, n2=None):
+def genslice(latlons, n1=None, n2=None):
     '''Description:
         Extrac iris cube slices of a variable
        Attributes:
@@ -418,6 +486,7 @@ def genslice(llon, llat, ulat, ulon, n1=None, n2=None):
         n1: pressure low
         n2: pressure high
     '''
+    llon, llat, ulat, ulon = latlons
     if n1 is None and n2 is None:
         xysmallslice = iris.Constraint(longitude=lambda cell: float(llon)
                                        <= cell <= float(ulon),

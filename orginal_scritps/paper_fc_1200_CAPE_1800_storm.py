@@ -65,7 +65,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
   dates = gent('../CP4_FC_precip_storms_over_box_area_'+str(size_of_storm)+'_lons_'+str(xstart)+'_'+str(xend)+'_lat_'+str(ystart)+'_'+str(yend)+'.csv', delimiter = ',', names = ['stormid','year','month','day','hour','llon','ulon','llat','ulat','centlon','centlat','area','mean_olr'])
   dates = np.sort(dates[:], axis = -1, order = ['stormid','mean_olr'])
   print dates.shape
-  storms_to_keep = np.zeros((1,10),float)# You need to bear in mind that this code wants to track the point when the storm is at minimum OLR.
+  storms_to_keep = np.zeros((1,10),float) # You need to bear in mind that this code wants to track the point when the storm is at minimum OLR.
   for line in dates:
     strm = line['stormid']
     goodup = 0
@@ -288,11 +288,11 @@ def main(xstart,xend,ystart,yend,size_of_storm):
 
 				if len(pressures) == 18:
 					for p in range(0, len(pressures)):
-                                                if 710. >= pressures[p] > 690.:
-                                                        RH_650hPa.extend([(0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))])
+                        if 710. >= pressures[p] > 690.:
+                            RH_650hPa.extend([(0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))])
 						if all_cube.shape[0] == 1:
 							all_cube[0,p,4] = (0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))
-							all_cube[0,p,5] = meteocalc.dew_point(temperature = cube_T[p].data - 273.16, humidity = all_cube[0,p,4])
+							all_cube[0,p,5] = meteocalc.dew_point(temperature = cube_T[p].data - 273.16, humidity=all_cube[0,p,4])
 						else:
 							temp_cube[0,p,4] = (0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))
 							temp_cube[0,p,5] = meteocalc.dew_point(temperature = cube_T[p].data - 273.16, humidity = temp_cube[0,p,4])
@@ -321,7 +321,7 @@ def main(xstart,xend,ystart,yend,size_of_storm):
 						all_cube[0,:,2] = cube_T.data
 						all_cube[0,:,3] = cube_q.data
 						all_cube[0,:,6] = p99
-				                all_cube[0,:,2] = all_cube[0,:,2] - 273.16
+				        all_cube[0,:,2] = all_cube[0,:,2] - 273.16
 						all_cube[0,:,7] = cube_u.data
 						all_cube[0,:,8] = cube_v.data
  				                #mydata = dict(zip(('hght','pres','temp','dwpt'),(all_cube[:,1].data[::-1],all_cube[:,0].data[::-1], all_cube[:,2].data[::-1],all_cube[:,5].data[::-1])))

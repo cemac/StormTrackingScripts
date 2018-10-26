@@ -28,6 +28,7 @@ values for some storms.
 
 import pandas as pd
 import numpy as np
+import metpy.calc as metcalc
 
 
 class stormcalcs(object):
@@ -46,13 +47,23 @@ class stormcalcs(object):
         u3_diff_10m = df.eve_wind3_99p - df.midday_wind3
         precip99 = df.precip_99th_perc*3600
         precipvol = df.precip_accum*3600
-        vars = ['pressure', 'T' 'dewpt', 'height', 'q', 'RH', 'metrics']
+        vars = ['pressure', 'T' 'dewpT', 'height', 'Q', 'z', 'RH650']
+        self.tephidf = pd.DataFrame(columns=vars)
+        vars = ['P_lcl', 'P_lfc', 'P_el', 'CAPE', 'CIN']
+        self.capedf = pd.DataFrame(columns=vars)
 
     def calc_cape(self, q15, T, idx):
         '''Description:
-            Calculate midday and eveing mass
+            Variable required to calculate Convective Available Potential
+            Energy: $\int_{zf}^{zn} g
+            \left( \frac{T_{v, parcel} - T_{v,env}}{T_{v,env}}\right)
+            \mathrm{d}z$
+            If > 0 storms possible if enough moisture
             Attributes:
-        idx: row index
+                idx: row index
+            Returns:
+            CAPE(dataframe): dataframe containing Vars for cape calculations
+            TEPHI(dataframe): dataframe containg vars for tephigrams
         '''
         P = self.allvars['eve_mslp_mean'].loc[idx]/100
         # ? 975 is a max value ?
@@ -102,3 +113,18 @@ class stormcalcs(object):
                                 / 0.0065)
                 else:
                     height[p] = 1.5
+
+        self.tephidf['pressure'].loc[idx] = np.average(pressure, axis=0)
+        self.tephidf['T'].loc[idx] = np.average(T, axis=0)
+        self.tephidf['dewpT'].loc[idx] = np.average(depwT, axis=0)
+        self.tephidf['height'].loc[idx] = np.average(height, axis=0)
+        self.tephidf['Q'].loc[idx] = np.average(Q, axis=0)
+        self.tephidf['p99'].loc[idx] = np.average(p99, axis=0)
+        self.tephidf['xwind'].loc[idx] = np.average(xwind, axis=0)
+        self.tephidf['ywind'].loc[idx] = np.average(ywind, axis=0)
+        self.tephidf['RH650'].loc[idx] = np.average(RH650, axis=0)
+        mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
+                          (height, pressure, T, dewpT)))
+        S = sk.Sounding(soundingdata=mydata)
+        parcel = S.get_parcel('mu')
+        self.capedf.loc[idx] = S.get_cape(*parcel)
