@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Paralell functions
 
+
 This module was developed by CEMAC as part of the AMAMA 2050 Project. A lot
 of the processing invloved in this work relies on searching through thousands
 of files and extracting variables. Perfect for multithreading
@@ -27,6 +28,8 @@ def _pickle_method(m):
     '''Taken from
     https://laszukdawid.com/2017/12/13/multiprocessing-in-python-all-about-pickling/
     multiprocessing with in a class requires some adaptation to pickling.
+    Circumnavigates GIL lock in pickles - which allows objects to cominicate
+    with each other. Outside of a class there is no pickling.
     '''
     class_self = m.im_class if m.im_self is None else m.im_self
     return getattr, (class_self, m.im_func.func_name)

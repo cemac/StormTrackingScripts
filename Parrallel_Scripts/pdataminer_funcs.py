@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """pdataminer
 
+
 This module was developed by CEMAC as part of the AMAMA 2050 Project.
 This scripts build on Work done my Rory Fitzpatrick, taking the stroms from
 stromsinabox csv files. This is the parallelized version.
