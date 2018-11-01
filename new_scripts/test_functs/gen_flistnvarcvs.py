@@ -14,7 +14,7 @@ import numpy as np
 
 # Variables passed in
 dataroot = '/nfs/a299/IMPALA/data/fc/4km/'
-storminfo = '20060601'
+storminfo = '19990601'
 
 ## func
 vars = pd.read_csv('../vars.csv')
@@ -29,4 +29,19 @@ for i in range(0, len(foldername)):
             except IndexError:
                 pass
 flist = df
-## func2 
+varnames=vars['varname']
+## func2
+if varcodes is not None:
+    foldername = varcodes
+else:
+    ds = pd.Series(os.listdir(dataroot))
+    foldername = ds[ds.str.len() == 6].reset_index(drop=True)
+df = pd.DataFrame(columns=['file', 'codes', 'varname'])
+for i in range(0, len(foldername)):
+    try:
+        df.loc[i] = [glob.glob(str(dataroot) + str(foldername[i])
+                                       + '/' + str(foldername[i]) + '*_' +
+                                       str(storminfo) + '*-*.nc')[0],
+                             foldername[i], varnames[i]]
+    except IndexError:
+        pass

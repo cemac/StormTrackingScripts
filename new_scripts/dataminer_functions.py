@@ -116,8 +116,7 @@ class dm_functions(object):
         else:
             ds = pd.Series(os.listdir(self.dataroot))
             foldername = ds[ds.str.len() == 6].reset_index(drop=True)
-        df = pd.DataFrame(columns=['file', 'codes'],
-                          index=[range(0, len(foldername))])
+        df = pd.DataFrame(columns=['file', 'codes', 'varname'])
         for i in range(0, len(foldername)):
             try:
                 df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
@@ -246,6 +245,7 @@ class dm_functions(object):
                 idx(int): row index
         '''
         uf, vf = filenames
+        print(uf)
         u10 = iris.load_cube(uf)
         v10 = iris.load_cube(vf)
         highu = cubemean(u10.extract(xyhi)[3, :, :, :])
@@ -304,83 +304,81 @@ class dm_functions(object):
             CAPE(dataframe): dataframe containing Vars for cape calculations
             TEPHI(dataframe): dataframe containg vars for tephigrams
         '''
-        Qf, Q15f, Tf, T15f = fnamelist
-        q15 = iris.load_cube(Q15f)
-        q15 = q15[11, :, :].extract(xy)
-        T15 = cubemean(iris.load_cube(T15f)[11, :, :].extract(xy))
-        xwind = cubemean(u[3, :, :])
-        ywind = cubemean(v[3, :, :])
-        P = self.allvars['eve_mslp_mean'].loc[idx]/100
+        qf, q15f, Tf, t15f = fnamelist
         # ? 975 is a max value ?
         T = iris.load_cube(Tf)
-        q = iris.load_cube(Qf)
-        if P > 975:
-            P = 975
-        xy850 = genslice(latlons, n1=P, n2=100)
-        T = T[3, :, :].extract(xy850)
-        q = q[3, :, :].extract(xy850)
-        Tp = T.data
-        Qp = q.data
+        q = iris.load_cube(qf)
+        mslp = self.allvars['eve_mslp_mean'].loc[idx]/100
+        if mslp > 975:
+            mslp = 975
+        xy850 = genslice(latlons, n1=mslp, n2=100)
+        T850 = T[3, :, :].extract(xy850)
+        q850 = q[3, :, :].extract(xy850)
+        Tp = T850.data
+        Qp = q850.data
         # get rid of values sub 100?
         Tp[Tp < 100] = np.nan
-        Qp[Qp < 100] = np.nan
         Tcol = np.zeros(Tp.shape[0])
         Qcol = np.zeros(Tp.shape[0])
         for p in range(0, Tp.shape[0]):
             Tcol[p] = np.nanmean(Tp[p, :, :])
             Qcol[p] = np.nanmean(Qp[p, :, :])
-        Tcol = cubemean(Tcol)
-        Qcol = cubemean(Qcol)
-        T.data = Tcol
-        q.data = Qcol
-        pressure = T.coord('pressure').points
-        pressure = pressure.extend([P])
-        pval = T.data.shape[0] + 1
+        Tcube = cubemean(T850)
+        Qcube = cubemean(q850)
+        Tcube.data = Tcol
+        Qcube.data = Qcol
+        pval = Tcube.data.shape[0] + 1
         f_T = T[3, : pval, 1, 1]
         f_q = q[3, : pval, 1, 1]
-        f_T.data[:pval] = Tcol
-        f_T.data[pval] = T15.data
-        f_q.data[:pval] = Qcol
-        f_q.data[pval] = cubemean(q15).data
-        t = f_T
-        pres = f_q
-        f_q.data = pressure*100
-        pressures = f_q.data
+        f_T.data[:pval-1] = Tcol
+        f_q.data[:pval-1] = Qcol
+        t15 = cubemean(iris.load_cube(t15f)[11, :, :].extract(xy))
+        P = self.allvars['eve_mslp_mean'].loc[idx]/100
+        f_T.data[pval-1] = t15.data
+        q15 = iris.load_cube(q15f)
+        q15 = q15[11, :, :].extract(xy)
+        f_q.data[pval-1] = cubemean(q15).data
+        T = f_T.data
+        hum = f_q.data
+        Tkel = T - 273.16
+        pressures = Tcube.coord('pressure').points
+        pressures = np.append(pressures, mslp)
+        P = pressures * 100
         height = np.zeros((len(pressures)))
         dwpt = np.zeros((len(pressures)))
-        if len(pressure == 18):
+        humity = np.zeros((len(pressures)))
+        if len(pressures) == 18:
             for p in range(0, len(pressures)):
-                if 710. >= pressures[p] > 690.:
-                    RH_650 = ([(0.263 * pres.data[p] * pressures.data[p])
-                               / 2.714**((17.67*(t.data[p] - 273.16)) /
-                                         (t.data[p] - 29.65))])
-                T = (0.263 * pres.data[p] *
-                     pressures.data[p])/2.714**((17.67*(t.data[p] -
-                                                        273.16))/(t.data[p]
-                                                                  - 29.65))
-                dwpt[p] = meteocalc.dew_point(temperature=t[p].data - 273.16,
-                                              humidity=T)
+                if 710. >= P[p] > 690.:
+                    RH_650hPa[p] = ([(0.263 * hum[p] * P[p]) /
+                                     2.714**((17.67*(Tkel[p])) /
+                                     (T[p] - 29.65))])
+                humity[p] = ((0.263 * hum[p] * P[p]) /
+                             2.714**((17.67*(Tkel[p]))/(T[p] - 29.65)))
+                dwpt[p] = meteocalc.dew_point(temperature=Tkel[p],
+                                              humidity=humity[p])
                 if p < len(pressures)-1:
-                    height[p] = (t[p].data*((100*P /
-                                             pressures.data[p])**(1./5.257)
-                                            - 1)
-                                 / 0.0065)
+                    height[p] = T[p]*((mslp*100/P[p])**(1./5.257) - 1)/0.0065
                 else:
                     height[p] = 1.5
-
+        xwind = cubemean(u[3, :, :])
+        ywind = cubemean(v[3, :, :])
+        self.tephidf.loc[idx] = 0
         self.tephidf['pressure'].loc[idx] = np.average(pressure, axis=0)
         self.tephidf['T'].loc[idx] = np.average(T, axis=0)
         self.tephidf['dewpT'].loc[idx] = np.average(dwpt, axis=0)
         self.tephidf['height'].loc[idx] = np.average(height, axis=0)
-        self.tephidf['Q'].loc[idx] = np.average(q, axis=0)
-        self.tephidf['p99'].loc[idx] = np.average(precip99, axis=0)
-        self.tephidf['xwind'].loc[idx] = np.average(xwind, axis=0)
-        self.tephidf['ywind'].loc[idx] = np.average(ywind, axis=0)
-        self.tephidf['RH650'].loc[idx] = RH_650
+        self.tephidf['Q'].loc[idx] = np.average(humity, axis=0)
+        self.tephidf['p99'].loc[idx] = precip99*3600.
+        self.tephidf['xwind'].loc[idx] = xwind
+        self.tephidf['ywind'].loc[idx] = ywind
+        self.tephidf['RH650'].loc[idx] = np.average(RH_650, axis=0)
         mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
-                          (height, pressure, T, dwpt)))
+                          (height[::-1], pressures[::-1], cube_T.data[::-1],
+                           dwpt[:: -1])))
         S = sk.Sounding(soundingdata=mydata)
         parcel = S.get_parcel('mu')
+        self.capedf.loc[idx] = 0
         self.capedf.loc[idx] = S.get_cape(*parcel)
 
     def gen_var_csvs(self, csvroot, storms_to_keep, CAPE=None, TEPHI=None):
@@ -437,7 +435,7 @@ class dm_functions(object):
             v = iris.load_cube(vf, xy)
             self.calc_winds(u, v, idx)
             uf = flist[flist.varname == 'u'].file
-            uf = flist[flist.varname == 'v'].file
+            vf = flist[flist.varname == 'v'].file
             self.calc_shear([uf, vf], xylw, xyhi, idx)
             of = flist[flist.varname == 'omega'].file
             Tf = flist[flist.varname == 'T'].file
@@ -486,7 +484,16 @@ def genslice(latlons, n1=None, n2=None):
         n1: pressure low
         n2: pressure high
     '''
+    fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
+             'ah261_4km_200012070030-200012072330.nc')
+    cube = iris.load(fname)[1]
+    lon = cube.coord('longitude').points.tolist()
+    lat = cube.coord('latitude').points.tolist()
     llon, llat, ulat, ulon = latlons
+    llon = lon[int(llon)]
+    ulon = lon[int(ulon)]
+    llat = lat[int(llat)]
+    ulat = lat[int(ulat)]
     if n1 is None and n2 is None:
         xysmallslice = iris.Constraint(longitude=lambda cell: float(llon)
                                        <= cell <= float(ulon),
