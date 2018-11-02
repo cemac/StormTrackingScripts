@@ -22,6 +22,8 @@ Attributes:
 import multiprocessing
 import pandas as pd
 import numpy as np
+from numba import autojit
+import iris
 
 
 def _pickle_method(m):
@@ -65,3 +67,72 @@ def yes_or_no(question):
         print("You did not enter one of 'y' or 'n'. Assumed 'n'.")
         answ = False
     return answ
+
+
+def genslice(latlons, n1=None, n2=None):
+    '''Description:
+        Extrac iris cube slices of a variable
+       Attributes:
+        llon: lower longitude
+        llat: lower latitude
+        ulat: upper latitude
+        ulon: upper longitude
+        n1: pressure low
+        n2: pressure high
+    '''
+    fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
+             'ah261_4km_200012070030-200012072330.nc')
+    cube = iris.load(fname)[1]
+    lon = cube.coord('longitude').points.tolist()
+    lat = cube.coord('latitude').points.tolist()
+    llon, llat, ulat, ulon = latlons
+    # llon = lon[int(llon)]
+    # ulon = lon[int(ulon)]
+    # llat = lat[int(llat)]
+    # ulat = lat[int(ulat)]
+    if n1 is None and n2 is None:
+        xysmallslice = iris.Constraint(longitude=lambda cell: float(llon)
+                                       <= cell <= float(ulon),
+                                       latitude=lambda cell: float(llat) <=
+                                       cell <= float(ulat))
+    elif n1 is not None and n2 is None:
+        xysmallslice = iris.Constraint(pressure=lambda cell: n1 ==
+                                       cell, longitude=lambda cell:
+                                       float(llon) <= cell <= float(ulon),
+                                       latitude=lambda cell: float(llat)
+                                       <= cell <= float(ulat))
+    elif n1 == 500 and n2 == 800:
+        xysmallslice = iris.Constraint(pressure=lambda cell: n1 <= cell <=
+                                       n2 or cell == 60, longitude=lambda cell:
+                                       float(llon) <= cell <= float(ulon),
+                                       latitude=lambda cell: float(llat) <=
+                                       cell <= float(ulat))
+    else:
+        xysmallslice = iris.Constraint(pressure=lambda cell: n1 >=
+                                       cell >= n2, longitude=lambda cell:
+                                       float(llon) <= cell <= float(ulon),
+                                       latitude=lambda cell: float(llat) <=
+                                       cell <= float(ulat))
+    return xysmallslice
+
+
+@autojit
+def cubemean(var):
+    '''Description:
+        Find the mean of an iris cube variable
+       Attributes:
+        var: iris cube variable
+    '''
+    return var.collapsed(['latitude', 'longitude'], iris.analysis.MEAN)
+
+
+@autojit
+def cube99(var, per=99):
+    '''Description:
+        Find the Nth PERCENTILE of an iris cube variable
+       Attributes:
+        var: iris cube variable
+        p(int): PERCENTILE normally 1 or 99
+    '''
+    return var.collapsed(['latitude', 'longitude'], iris.analysis.PERCENTILE,
+                         percent=per).data

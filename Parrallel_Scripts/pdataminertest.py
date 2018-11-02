@@ -10,7 +10,8 @@ STAGE 1 : remove requirement for folder structure
 from os.path import expanduser
 import numpy as np
 from numpy import genfromtxt as gent
-from pdataminer_funcs import dm_functions
+from Pdataminer_funcsv2 import dm_functions
+import pandas as pd
 
 # Variables
 size_of_storm = 5000
@@ -19,16 +20,19 @@ y1, y2 = [10, 18]
 fcorcc = 0
 csvroot = ('ptestfc', ' ptestcc')
 dataroot = ('/nfs/a299/IMPALA/data/fc/4km/', '/nfs/a277/IMPALA/data/4km/')
-stormhome = expanduser("~")+'/AMMA2050'
-run = ('fc_storms_to_keep_area_', 'cc_storms_to_keep_area_')
+stormhome = expanduser("~")+'/AMMA2050/Parrallel_Scripts'
+run = ('fc_storms_over_box_area', 'fc_storms_to_keep_area_',
+       'cc_storms_to_keep_area_')
 csvname = (stormhome + '/' + run[0] + str(size_of_storm) +
-           '_longitudes_' + str(x1) + '_' + str(x2) + '_' + str(y1) + '_' +
-           str(y2) + '_1800Z.csv')
+           '_lons_' + str(x1) + '_' + str(x2) + '_lat_' + str(y1) + '_' +
+           str(y2) + '.csv')
 # Generating file list
-dmf = dm_functions(dataroot[fcorcc])
+dmf = dm_functions(dataroot[fcorcc], CAPE='Y', TEPHI='Y')
 # find storms
 try:
-    storms_to_keep = gent(csvname, delimiter=',')
+    varlist = ['year', 'month', 'day', 'hour', 'llon', 'ulon', 'llat',
+               'ulat', 'stormid', 'mean_olr']
+    storms_to_keep = pd.read_csv(csvname, sep=',', names=varlist)
 except IOError:
     print('Generating csv file of storms to keep ...')
     # if its not there we'll have to generate it from CP4
