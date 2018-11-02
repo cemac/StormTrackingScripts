@@ -353,7 +353,7 @@ class dm_functions(object):
                     dwpt[p] = meteocalc.dew_point(temperature=Tkel[p],
                                                   humidity=humity[p])
                 except ValueError:
-                    dwpt[p] = npn.nan
+                    dwpt[p] = np.nan
                 if p < len(pressures)-1:
                     height[p] = T[p]*((mslp*100/P[p])**(1./5.257) - 1)/0.0065
                 else:
