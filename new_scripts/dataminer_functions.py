@@ -21,16 +21,24 @@ Attributes:
 
 import glob
 import os
+import sys
 import iris
 import numpy as np
+import warnings
 from numpy import genfromtxt as gent
+from numba import autojit
 import pandas as pd
 from tqdm import tqdm
 import meteocalc
 from skewt import SkewT as sk
 
 
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+
+
 # Stand alone methods
+@autojit
 def cubemean(var):
     '''Description:
         Find the mean of an iris cube variable
@@ -40,6 +48,7 @@ def cubemean(var):
     return var.collapsed(['latitude', 'longitude'], iris.analysis.MEAN)
 
 
+@autojit
 def cube99(var, per=99):
     '''Description:
         Find the Nth PERCENTILE of an iris cube variable
@@ -70,11 +79,13 @@ class dm_functions(object):
         self.vars = pd.read_csv('vars.csv')
         self.evemid = [11, 17]
         self.allvars = pd.read_csv('all_vars_template.csv')
-        vari = ['pressure', 'T' 'dewpT', 'height', 'Q', 'z', 'RH650']
+        vari = ['Stormid', 'pressure', 'T', 'dewpT', 'height', 'Q',
+                'RH650', 'p99', 'xwind', 'ywind']
         self.tephidf = pd.DataFrame(columns=vari)
-        vari = ['P_lcl', 'P_lfc', 'P_el', 'CAPE', 'CIN']
+        vari = ['Stormid', 'P_lcl', 'P_lfc', 'P_el', 'CAPE', 'CIN']
         self.capedf = pd.DataFrame(columns=vari)
 
+    @autojit
     def gen_storms_to_keep(self, altcsvname):
         """Generate storms to keep csvs
         Attributes:
@@ -127,6 +138,7 @@ class dm_functions(object):
                 pass
         return df
 
+    @autojit
     def mean99(self, var, strings, idx, p=99):
         '''Description:
             Find the mean for the midday slice and the Nth PERCENTILE of an
@@ -151,6 +163,7 @@ class dm_functions(object):
                 self.allvars[strmean].loc[idx] = varmean
                 self.allvars[str99p].loc[idx] = var99p
 
+    @autojit
     def calc_t15(self, t15f, xy, idx):
         '''Description: mean99 for T15 variable
             Attributes:
@@ -161,6 +174,7 @@ class dm_functions(object):
         strings = ['mean_T15_1200', 'mean_T15_1800', '1perc_T15_1800']
         self.mean99(t15, strings, idx, p=1)
 
+    @autojit
     def calc_mslp(self, fname, xy, idx):
         '''Description:
         Find the mean of an iris cube variable
@@ -172,6 +186,7 @@ class dm_functions(object):
         strings = ['midday_mslp', 'eve_mslp_mean', 'eve_mslp_1p']
         self.mean99(allvari, strings, idx)
 
+    @autojit
     def calc_winds(self, u, v, idx):
         '''Description: Calculate winds for eveing and midday using u and v.
            Attributes:
@@ -196,6 +211,7 @@ class dm_functions(object):
                     self.allvars['eve_wind3_mean'].loc[idx] = mwind2
                     self.allvars['eve_wind3_99p'].loc[idx] = mwind1p
 
+    @autojit
     def calc_tow(self, of, Tf, xy600, idx):
         '''Description: Calculate bouyancy, omega and max for eveing midday etc
             Attributes:
@@ -245,7 +261,6 @@ class dm_functions(object):
                 idx(int): row index
         '''
         uf, vf = filenames
-        print(uf)
         u10 = iris.load_cube(uf)
         v10 = iris.load_cube(vf)
         highu = cubemean(u10.extract(xyhi)[3, :, :, :])
@@ -270,6 +285,7 @@ class dm_functions(object):
                     maxcheck = shearval
         self.allvars['hor_shear'].loc[idx] = maxcheck
 
+    @autojit
     def calc_mass(self, wetf, dryf, xy, idx):
         '''Description:
             Calculate midday and eveing mass
@@ -291,6 +307,7 @@ class dm_functions(object):
             else:
                 self.allvars['mass_mean_1800'].loc[idx] = massm
 
+    @autojit
     def calc_cape(self, fnamelist, u, v, precip99, xy, idx, latlons):
         r'''Description:
             Variable required to calculate Convective Available Potential
@@ -347,12 +364,13 @@ class dm_functions(object):
         height = np.zeros((len(pressures)))
         dwpt = np.zeros((len(pressures)))
         humity = np.zeros((len(pressures)))
+        RH_650 = np.zeros((len(pressures)))
         if len(pressures) == 18:
             for p in range(0, len(pressures)):
                 if 710. >= P[p] > 690.:
-                    RH_650hPa[p] = ([(0.263 * hum[p] * P[p]) /
-                                     2.714**((17.67*(Tkel[p])) /
-                                     (T[p] - 29.65))])
+                    RH_650[p] = ([(0.263 * hum[p] * P[p]) /
+                                  2.714**((17.67*(Tkel[p])) /
+                                  (T[p] - 29.65))])
                 humity[p] = ((0.263 * hum[p] * P[p]) /
                              2.714**((17.67*(Tkel[p]))/(T[p] - 29.65)))
                 dwpt[p] = meteocalc.dew_point(temperature=Tkel[p],
@@ -364,22 +382,29 @@ class dm_functions(object):
         xwind = cubemean(u[3, :, :])
         ywind = cubemean(v[3, :, :])
         self.tephidf.loc[idx] = 0
-        self.tephidf['pressure'].loc[idx] = np.average(pressure, axis=0)
+        self.tephidf['pressure'].loc[idx] = np.average(pressures, axis=0)
         self.tephidf['T'].loc[idx] = np.average(T, axis=0)
         self.tephidf['dewpT'].loc[idx] = np.average(dwpt, axis=0)
         self.tephidf['height'].loc[idx] = np.average(height, axis=0)
         self.tephidf['Q'].loc[idx] = np.average(humity, axis=0)
         self.tephidf['p99'].loc[idx] = precip99*3600.
-        self.tephidf['xwind'].loc[idx] = xwind
-        self.tephidf['ywind'].loc[idx] = ywind
+        self.tephidf['xwind'].loc[idx] = xwind.data
+        self.tephidf['ywind'].loc[idx] = ywind.data
         self.tephidf['RH650'].loc[idx] = np.average(RH_650, axis=0)
+        self.tephidf['Stormid'].loc[idx] = self.allvars['storms_to_keep'].loc[idx]
         mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
-                          (height[::-1], pressures[::-1], cube_T.data[::-1],
+                          (height[::-1], pressures[::-1], T.data[::-1],
                            dwpt[:: -1])))
         S = sk.Sounding(soundingdata=mydata)
         parcel = S.get_parcel('mu')
         self.capedf.loc[idx] = 0
-        self.capedf.loc[idx] = S.get_cape(*parcel)
+        P_lcl, P_lfc, P_el, CAPE, CIN = S.get_cape(*parcel)
+        self.capedf['P_lcl'].loc[idx] = P_lcl
+        self.capedf['P_lfc'].loc[idx] = P_lfc
+        self.capedf['P_el'].loc[idx] = P_el
+        self.capedf['CAPE'].loc[idx] = CAPE
+        self.capedf['CIN'].loc[idx] = CIN
+        self.capedf['Stormid'].loc[idx] = self.allvars['storms_to_keep'].loc[idx]
 
     def gen_var_csvs(self, csvroot, storms_to_keep, CAPE=None, TEPHI=None):
         '''Description: The meat of this module, from the storms listed find if
@@ -464,7 +489,6 @@ class dm_functions(object):
                 qf = flist[flist.varname == 'Q'].file
                 fnamelist = [qf, q15f, Tf, t15f]
                 self.calc_cape(fnamelist, u, v, precip99, xy, idx, latlons)
-            break
         self.allvars.to_csv(csvroot+'_standard.csv')
         if CAPE == 'Y':
             self.capedf.to_csv(csvroot+'_cape.csv')

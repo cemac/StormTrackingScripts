@@ -33,4 +33,4 @@ except IOError:
     # if its not there we'll have to generate it from CP4
     storms_to_keep = dmf.gen_storms_to_keep(csvname)
     np.savetxt(csvname, storms_to_keep[:, :], delimiter=',')
-dmf.gen_var_csvs(csvroot[fcorcc], storms_to_keep)
+dmf.gen_var_csvs(csvroot[fcorcc], storms_to_keep, CAPE='Y', TEPHI='Y')
