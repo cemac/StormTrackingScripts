@@ -29,52 +29,17 @@ import multiprocessing
 import copy_reg as copyreg
 import pandas as pd
 import numpy as np
+import warnings
+import sys
+from numba import autojit
 import types
 import iris
+import Pfuncts
 
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
 
-def _pickle_method(m):
-    '''Taken from
-    https://laszukdawid.com/2017/12/13/multiprocessing-in-python-all-about-pickling/
-    multiprocessing with in a class requires some adaptation to pickling.
-    '''
-    class_self = m.im_class if m.im_self is None else m.im_self
-    return getattr, (class_self, m.im_func.func_name)
-
-
-copyreg.pickle(types.MethodType, _pickle_method)
-
-
-def parallelize_dataframe(df, func, nice):
-    '''parallelize a data frame
-
-    Attributes:
-        df: dataframe
-        func: function
-        nice: niceness 1/nice share of machince
-
-    Returns:
-        df: DataFrame chucked to different processors
-    '''
-    nprocs = int(multiprocessing.cpu_count()/nice)
-    df_split = np.array_split(df, nprocs)
-    pool = multiprocessing.Pool(nprocs)
-    df = pd.concat(pool.map(func, df_split))
-    pool.close()
-    pool.join()
-    return df
-
-
-def yes_or_no(question):
-    reply = str(input(question+' (y/n): ')).lower().strip()
-    if reply[0] == 'y':
-        answ = True
-    elif reply[0] == 'n':
-        answ = False
-    else:
-        print("You did not enter one of 'y' or 'n'. Assumed 'n'.")
-        answ = False
-    return answ
+copyreg.pickle(types.MethodType, Pfuncts._pickle_method)
 
 
 class storminbox(object):
@@ -120,14 +85,19 @@ class storminbox(object):
        Returns:
        df(DataFrame): A data frame of storm file names
         """
-        df = pd.DataFrame()
-        df2 = pd.DataFrame(columns=['file'], index=[range(0, len(df))])
-        df['file'] = (glob.glob(self.froot+'*/a04203*4km*.txt'))
-        for rw in df.itertuples():
-            if rw.file[90:92] in [str(x).zfill(2) for x in range(6, 10)]:
-                df2.loc[rw[0]] = 0
-                df2['file'].loc[rw[0]] = rw.file
-        df = df2.reset_index(drop=True)
+        try:
+            df = pd.read_csv('filelist.csv', sep=',')
+            return df
+        except IOError:
+            df = pd.DataFrame()
+            df2 = pd.DataFrame(columns=['file'], index=[range(0, len(df))])
+            df['file'] = (glob.glob(self.froot+'*/a04203*4km*.txt'))
+            for rw in df.itertuples():
+                if rw.file[90:92] in [str(x).zfill(2) for x in range(6, 10)]:
+                    df2.loc[rw[0]] = 0
+                    df2['file'].loc[rw[0]] = rw.file
+            df = df2.reset_index(drop=True)
+            df.to_csv('filelist.csv', sep=',')
         # Storms we want have this infor
         print('generated file list...')
         return df
@@ -208,11 +178,11 @@ class storminbox(object):
         if nice == 1 and shared == 'Y':
             print('WARNING: Using a whole machine is not very nice')
             print('Setting to quater machine....')
-            print('If you not using a shared resource please specify')
+            print('If you are not using a shared resource please specify')
             nice = 4
 
         if nice == 2 and shared == 'Y':
-            ans = yes_or_no(('***WARNING***: You are asking to use half a shared computer \
+            ans = Pfuncts.yes_or_no(('***WARNING***: You are asking to use half a shared computer \
             consider fair use of shared resources, do you wish to continue?\
             Y or N'))
 
@@ -221,9 +191,8 @@ class storminbox(object):
                 return
 
         df = self.create_dataframe()
-        pstorms = parallelize_dataframe(df, self.find_the_storms, nice)
+        pstorms = Pfuncts.parallelize_dataframe(df, self.find_the_storms, nice)
         pstorms.to_csv(self.idstring + 'storms_over_box_area' +
                        str(self.size_of_storm)
                        + '_lons_' + str(self.x1) + '_' + str(self.x2) +
                        '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')
-
