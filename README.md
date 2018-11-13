@@ -38,6 +38,7 @@ Use the python 3 download. Requires [python SkewT](https://github.com/tjlang/Ske
 <hr>
 
 ## Installation (recommended)##
+
 StormScripts requires a few nonstandard modules (skewt, meteocalc). anaconda or miniconda is recommended method of Installation.
 
 **python 3 (recommended)**
@@ -82,9 +83,13 @@ conda clean -t
 
 ## Upcoming Features ##
 
-1. Python GUI
+0. Plotting tools
 2. Documentation improvements
+4. STASH code variable library
 3. Feature requests
+4. Switch to CF-python
+5. minor speed up
+1. Python GUI
 
 <hr>
 
