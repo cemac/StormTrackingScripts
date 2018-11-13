@@ -68,8 +68,8 @@ class storminbox(object):
         fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
                  'ah261_4km_200012070030-200012072330.nc')
         cube = iris.load(fname)[1]
-        self.lon = cube.coord('longitude').points.tolist()
-        self.lat = cube.coord('latitude').points.tolist()
+        self.lon = cube.coord('longitude').points
+        self.lat = cube.coord('latitude').points
         self.cols = ['storm', 'no', 'area', 'centroid', 'box', 'life', 'u',
                      'v', 'mean', 'min', 'max', 'accreted', 'parent', 'child',
                      'cell']
@@ -155,12 +155,14 @@ class storminbox(object):
             # [minlatix, minlonix, nlats, nlons]
             # llat, llon, ulat, ulon
             storms[['llat', 'llon', 'nlat', 'nlon']] = storms['box'].str.split(',', expand=True)
-            stormsdf2.llon = pd.to_numeric(storms.llon) - 1
-            stormsdf2.llat = pd.to_numeric(storms.llat.str[4::]) - 1
-            stormsdf2.ulon = (pd.to_numeric(storms.nlon)
-                              + pd.to_numeric(storms.llon) - 1)
-            stormsdf2.ulat = (pd.to_numeric(storms.nlat) +
-                              pd.to_numeric(storms.llat.str[4::]) - 1)
+            lonsdf = self.lon[np.array([pd.to_numeric(storms.llon) - 1]).astype(int)]
+            stormsdf2.llon = lonsdf[0]
+            stormsdf2.llat = self.lat[np.array([pd.to_numeric(storms.llat.str[4::])
+                                           - 1]).astype(int)][0]
+            stormsdf2.ulon = self.lon[np.array([pd.to_numeric(storms.nlon)
+                                 + pd.to_numeric(storms.llon) - 1]).astype(int)][0]
+            stormsdf2.ulat = self.lat[np.array([pd.to_numeric(storms.nlat) +
+                                  pd.to_numeric(storms.llat.str[4::]) - 1]).astype(int)][0]
             # Append to whole area
             stormsdf = pd.concat([stormsdf, stormsdf2]).reset_index(drop=True)
         return stormsdf
@@ -189,7 +191,6 @@ class storminbox(object):
             if not ans:
                 print('Please revise nice number to higher value and try again...')
                 return
-
         df = self.create_dataframe()
         pstorms = Pfuncts.parallelize_dataframe(df, self.find_the_storms, nice)
         pstorms.to_csv(self.idstring + 'storms_over_box_area' +

@@ -80,16 +80,6 @@ def genslice(latlons, n1=None, n2=None):
         n1: pressure low
         n2: pressure high
     '''
-    fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
-             'ah261_4km_200012070030-200012072330.nc')
-    cube = iris.load(fname)[1]
-    lon = cube.coord('longitude').points.tolist()
-    lat = cube.coord('latitude').points.tolist()
-    llon, llat, ulat, ulon = latlons
-    # llon = lon[int(llon)]
-    # ulon = lon[int(ulon)]
-    # llat = lat[int(llat)]
-    # ulat = lat[int(ulat)]
     if n1 is None and n2 is None:
         xysmallslice = iris.Constraint(longitude=lambda cell: float(llon)
                                        <= cell <= float(ulon),

@@ -24,7 +24,7 @@ Attributes:
 import glob
 import iris
 import pandas as pd
-from tqdm import tqdm
+import numpy as np
 
 
 class storminbox(object):
@@ -48,11 +48,11 @@ class storminbox(object):
         fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
                  'ah261_4km_200012070030-200012072330.nc')
         cube = iris.load(fname)[1]
-        lon = cube.coord('longitude').points.tolist()
-        lat = cube.coord('latitude').points.tolist()
+        self.lon = cube.coord('longitude').points
+        self.lat = cube.coord('latitude').points
         froot = '/nfs/a277/IMPALA/data/4km/precip_tracking_12km_hourly/'
         df = pd.DataFrame()
-        df2 = pd.DataFrame(columns=['file'], index=[range(0, len(df))])
+        df2 = pd.DataFrame(columns=['file'])
         df['file'] = (glob.glob(froot+'*/a04203*4km*.txt'))
         for rw in df.itertuples():
             if rw.file[90:92] in [str(x).zfill(2) for x in range(6, 10)]:
@@ -63,7 +63,7 @@ class storminbox(object):
         cols = ['storm', 'no', 'area', 'centroid', 'box', 'life', 'u', 'v',
                 'mean', 'min', 'max', 'accreted', 'parent', 'child', 'cell']
         print('generated file list...')
-        for row in tqdm(df.itertuples(), total=len(df), unit="file"):
+        for row in df.itertuples():
             cfile = row.file  # current file
             vari = pd.read_csv(cfile, names=cols,  header=None,
                                delim_whitespace=True)
@@ -78,8 +78,8 @@ class storminbox(object):
             # centroid lat and lon are reffering to indicies written by matlab
             # i.e. +1 to the indice in python.
             for rw2 in storms.itertuples():
-                storms['centlon'].loc[rw2[0]] = lon[int(pd.to_numeric(rw2.centlon)-1)]
-                storms['centlat'].loc[rw2[0]] = lat[int(pd.to_numeric(rw2.centlat[9::])-1)]
+                storms['centlon'].loc[rw2[0]] = self.lon[int(pd.to_numeric(rw2.centlon)-1)]
+                storms['centlat'].loc[rw2[0]] = self.lat[int(pd.to_numeric(rw2.centlat[9::])-1)]
             storms = storms[storms.centlon <= x2].reset_index(drop=True)
             storms = storms[storms.centlon >= x1].reset_index(drop=True)
             storms = storms[storms.centlat <= y2].reset_index(drop=True)
@@ -103,12 +103,14 @@ class storminbox(object):
             # [minlatix, minlonix, nlats, nlons]
             # llat, llon, ulat, ulon
             storms[['llat', 'llon', 'nlat', 'nlon']] = storms['box'].str.split(',', expand=True)
-            stormsdf2.llon = pd.to_numeric(storms.llon) - 1
-            stormsdf2.llat = pd.to_numeric(storms.llat.str[4::]) - 1
-            stormsdf2.ulon = (pd.to_numeric(storms.nlon)
-                              + pd.to_numeric(storms.llon) - 1)
-            stormsdf2.ulat = (pd.to_numeric(storms.nlat) +
-                              pd.to_numeric(storms.llat.str[4::]) - 1)
+            stormsdf2.llon = self.lon[np.array([pd.to_numeric(storms.llon)
+                                      - 1]).astype(int)][0]
+            stormsdf2.llat = self.lat[np.array([pd.to_numeric(storms.llat.str[4::])
+                                      - 1]).astype(int)][0]
+            stormsdf2.ulon = self.lon[np.array([pd.to_numeric(storms.nlon)
+                      + pd.to_numeric(storms.llon) - 1]).astype(int)][0]
+            stormsdf2.ulat = self.lat[np.array([pd.to_numeric(storms.nlat) +
+                      pd.to_numeric(storms.llat.str[4::]) - 1]).astype(int)][0]
             # Append to whole area
             stormsdf = pd.concat([stormsdf, stormsdf2]).reset_index(drop=True)
         stormsdf.to_csv(idstring + 'storms_over_box_area' + str(size_of_storm)
