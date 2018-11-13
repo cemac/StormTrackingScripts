@@ -24,16 +24,12 @@ def main(x1, x2, y1, y2, size_of_storm):
     cnr = 0
     # Replace handwritten strings 1997-2006
     yyyy = [str(x) for x in range(1997, 2007)]
-    for yr in yyyy:
-        print yr
     cube = iris.load(fname)
-    print cube
     cube = cube[1]
     lon = cube.coord('longitude').points
     lat = cube.coord('latitude').points
     lons = lon.tolist()
     lats = lat.tolist()
-    print len(lons), len(lats)
     for x in range(0, len(lons)):
         if lons[x] <= float(x1) <= lons[x+1]:
             leftx = x
@@ -89,11 +85,11 @@ def main(x1, x2, y1, y2, size_of_storm):
                                               float(lons[int(ulon-1)])) / 2.0
                                 center_lat = (float(lats[int(llat-1)]) +
                                               float(lats[int(ulat-1)])) / 2.0
-                            if (float(lons[int(leftx)]) <= center_lon <=
-                                float(lons[int(rightx)]) and
-                                float(lats[int(lowy)]) <= center_lat <=
-                                float(lats[int(highy)])):
-                                cnr = cnr + 1
+                                if (float(lons[int(leftx)]) <= center_lon <=
+                                    float(lons[int(rightx)]) and
+                                    float(lats[int(lowy)]) <= center_lat <=
+                                    float(lats[int(highy)])):
+                                    cnr = cnr + 1
                                 if good_days[0, 0] < 1:
                                     good_days[0, 0] = StormID
                                     good_days[0, 1] = yr
@@ -129,10 +125,6 @@ def main(x1, x2, y1, y2, size_of_storm):
     for x in range(0, 24):
         if areas[x] > 1.0:
             areas[x] = areas[x]/float(storm_diurnal[x])
-    print cnr
-    print good_days[:]
-    print storm_diurnal[:]
-    print areas[:]
 
     np.savetxt('CP4_CC_precip_storms_over_box_area_' + str(size_of_storm) +
                '_lons_' + str(x1) + '_' + str(x2) + '_lat_' + str(y1) + '_' +

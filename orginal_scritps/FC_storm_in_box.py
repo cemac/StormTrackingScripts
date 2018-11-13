@@ -17,18 +17,18 @@ def main(x1,x2,y1,y2,size_of_storm):
  cnr = 0
  yyyy = ['1997','1998','1999','2000','2001','2002','2003','2004','2005','2006']
  for yr in yyyy:
-  print yr
+
 #  if yr == '1998':
 #	 cube = iris.load_cube('ac144a.pa19970610_17.pp')
 #  else:
   cube = iris.load('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_ah261_4km_200012070030-200012072330.nc')
-  print cube
+
   cube = cube[1]
   lon = cube.coord('longitude').points
   lat = cube.coord('latitude').points
   lons = lon.tolist()
   lats = lat.tolist()
-  print len(lons), len(lats)
+
   for x in range(0,len(lons)):
 	if lons[x] <= float(x1) <= lons[x+1]:
            leftx = x
@@ -119,11 +119,7 @@ def main(x1,x2,y1,y2,size_of_storm):
  for x in range(0,24):
      if areas[x] >1.0:
        areas[x] = areas[x]/float(storm_diurnal[x])
- print cnr
- print good_days[:]
- print storm_diurnal[:]
- print areas[:]
-
+ 
  np.savetxt('CP4_FC_precip_storms_over_box_area_'+str(size_of_storm)+'_lons_'+str(x1)+'_'+str(x2)+'_lat_'+str(y1)+'_'+str(y2)+'.csv', good_days[:], delimiter = ',')
 
 

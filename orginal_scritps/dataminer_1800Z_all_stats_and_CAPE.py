@@ -44,51 +44,50 @@ def main(x1, x2, y1, y2, size_of_storm):
                               '_'+str(y2)+'_1800Z.csv', delimiter=',')
         print storms_to_keep.shape
     except IOError:
-        dates = gent('../CP4_FC_precip_storms_over_box_area_' +
+        dates = gent('CP4_FC_precip_storms_over_box_area_' +
                      str(size_of_storm) + '_lons_' + str(x1) + '_' + str(x2) +
                      '_lat_'+str(y1)+'_'+str(y2) + '.csv', delimiter=',',
                      names=['stormid', 'year', 'month', 'day', 'hour', 'llon',
                             'ulon', 'llat', 'ulat', 'centlon', 'centlat',
                             'area', 'mean_olr'])
-    dates = np.sort(dates[:], axis=-1, order=['stormid', 'mean_olr'])
-    print dates.shape
-    storms_to_keep = np.zeros((1, 10), float)
-    # You need to bear in mind that this code wants to track the point when
-    # the storm is at minimum OLR.
-    for line in dates:
-        strm = line['stormid']
-        goodup = 0
-    for rw in range(0, storms_to_keep.shape[0]):
-        if int(strm) == int(storms_to_keep[rw, 8]):
-            goodup = goodup + 1
-        continue
-    if goodup < 1 and 18 == int(line['hour']):
-        if np.sum(storms_to_keep[0, :]) == 0:
-            storms_to_keep[0, 0] = line['year']
-            storms_to_keep[0, 1] = line['month']
-            storms_to_keep[0, 2] = line['day']
-            storms_to_keep[0, 3] = line['hour']
-            storms_to_keep[0, 4] = line['llon']
-            storms_to_keep[0, 5] = line['ulon']
-            storms_to_keep[0, 6] = line['llat']
-            storms_to_keep[0, 7] = line['ulat']
-            storms_to_keep[0, 8] = line['stormid']
-            storms_to_keep[0, 9] = line['mean_olr']
-        else:
-            temp = np.zeros((1, 10), float)
-            temp[0, 0] = line['year']
-            temp[0, 1] = line['month']
-            temp[0, 2] = line['day']
-            temp[0, 3] = line['hour']
-            temp[0, 4] = line['llon']
-            temp[0, 5] = line['ulon']
-            temp[0, 6] = line['llat']
-            temp[0, 7] = line['ulat']
-            temp[0, 8] = line['stormid']
-            temp[0, 9] = line['mean_olr']
-            storms_to_keep = np.concatenate((storms_to_keep, temp), axis=0)
+        dates = np.sort(dates[:], axis=-1, order=['stormid', 'mean_olr'])
+        storms_to_keep = np.zeros((1, 10), float)
+        # You need to bear in mind that this code wants to track the point when
+        # the storm is at minimum OLR.
+        for line in dates:
+            strm = line['stormid']
+            goodup = 0
+        for rw in range(0, storms_to_keep.shape[0]):
+            if int(strm) == int(storms_to_keep[rw, 8]):
+                goodup = goodup + 1
+            continue
+        if goodup < 1 and 18 == int(line['hour']):
+            if np.sum(storms_to_keep[0, :]) == 0:
+                storms_to_keep[0, 0] = line['year']
+                storms_to_keep[0, 1] = line['month']
+                storms_to_keep[0, 2] = line['day']
+                storms_to_keep[0, 3] = line['hour']
+                storms_to_keep[0, 4] = line['llon']
+                storms_to_keep[0, 5] = line['ulon']
+                storms_to_keep[0, 6] = line['llat']
+                storms_to_keep[0, 7] = line['ulat']
+                storms_to_keep[0, 8] = line['stormid']
+                storms_to_keep[0, 9] = line['mean_olr']
+            else:
+                temp = np.zeros((1, 10), float)
+                temp[0, 0] = line['year']
+                temp[0, 1] = line['month']
+                temp[0, 2] = line['day']
+                temp[0, 3] = line['hour']
+                temp[0, 4] = line['llon']
+                temp[0, 5] = line['ulon']
+                temp[0, 6] = line['llat']
+                temp[0, 7] = line['ulat']
+                temp[0, 8] = line['stormid']
+                temp[0, 9] = line['mean_olr']
+                storms_to_keep = np.concatenate((storms_to_keep, temp), axis=0)
 
-    np.savetxt('../fc_storms_to_keep_area_' + str(size_of_storm) +
+        np.savetxt('fc_storms_to_keep_area_' + str(size_of_storm) +
                '_longitudes_' + str(x1) + '_' + str(x2) + '_' + str(y1) +
                '_' + str(y2) + '_1800Z.csv', storms_to_keep[:, :],
                delimiter=',')
@@ -483,45 +482,45 @@ def main(x1, x2, y1, y2, size_of_storm):
                     all_OLR_1_perc.extend([OLR_1p])
                     all_area.extend([(float(ulo)-float(llo))*(float(ula)-float(lla))])
 
-        np.savetxt('../csvs/PAPER_FC_C2C4_STORMID_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_stormid, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_mean_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mean_T15_1200, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_mean_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mean_T15_1800, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_1perc_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_1perc_T15_1800, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_storm_area_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_area, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_99p_1p_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_OLR_1_perc, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_99p_10p_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_OLR_10_perc, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_99p_mean_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', OLRs, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_99p_col_int_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_col_w_p99, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_mean_col_int_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_col_w_mean, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_99p_precip_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_precip_99th_perc, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_precip_volume_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_precip_accum, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_mean_TCWV_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mass_mean_1200, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_mean_TCWV_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mass_mean_1800, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_mean_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1800_mean, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_min_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1800_1p, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_mean_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1200_mean, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_min_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1200_1p, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_max_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_w_1800, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_max_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_w_1200, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_max_buoyancy_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_buoyancy_1200_1p, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_max_zonal_shear_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_shear, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_max_horizontal_shear_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_hor_shear, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_max_buoyancy_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_buoyancy_1800_1p, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_mean_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_mslp, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_mean_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_wind, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1200Z_mean_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_wind3, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_mean_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_mslp_mean, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_mean_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind_mean, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_mean_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind3_mean, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_99p_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_mslp_1p, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_99p_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind_99p, delimiter = ',')
-        np.savetxt('../csvs/PAPER_FC_C2C4_1800Z_99p_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind3_99p, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_STORMID_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_stormid, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_mean_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mean_T15_1200, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_mean_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mean_T15_1800, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_1perc_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_1perc_T15_1800, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_storm_area_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_area, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_99p_1p_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_OLR_1_perc, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_99p_10p_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_OLR_10_perc, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_99p_mean_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', OLRs, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_99p_col_int_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_col_w_p99, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_mean_col_int_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_col_w_mean, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_99p_precip_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_precip_99th_perc, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_precip_volume_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_precip_accum, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_mean_TCWV_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mass_mean_1200, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_mean_TCWV_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mass_mean_1800, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_mean_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1800_mean, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_min_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1800_1p, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_mean_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1200_mean, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_min_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1200_1p, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_max_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_w_1800, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_max_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_w_1200, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_max_buoyancy_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_buoyancy_1200_1p, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_max_zonal_shear_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_shear, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_max_horizontal_shear_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_hor_shear, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_max_buoyancy_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_buoyancy_1800_1p, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_mean_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_mslp, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_mean_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_wind, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1200Z_mean_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_wind3, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_mean_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_mslp_mean, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_mean_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind_mean, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_mean_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind3_mean, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_99p_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_mslp_1p, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_99p_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind_99p, delimiter = ',')
+        np.savetxt('csvs/PAPER_FC_C2C4_1800Z_99p_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind3_99p, delimiter = ',')
 
     try:
-        storms_to_keep = gent('../OLR_12km_storms_to_keep_area_'+str(size_of_storm)+'_longitudes_'+str(x1)+'_'+str(x2)+'_'+str(y1)+'_'+str(y2)+'_1800Z.csv', delimiter = ',')
+        storms_to_keep = gent('OLR_12km_storms_to_keep_area_'+str(size_of_storm)+'_longitudes_'+str(x1)+'_'+str(x2)+'_'+str(y1)+'_'+str(y2)+'_1800Z.csv', delimiter = ',')
         print storms_to_keep.shape
     except IOError:
-        dates = gent('../CP4_CC_precip_storms_over_box_area_'+str(size_of_storm)+'_lons_'+str(x1)+'_'+str(x2)+'_lat_'+str(y1)+'_'+str(y2)+'.csv', delimiter = ',', names = ['stormid','year','month','day','hour','llon','ulon','llat','ulat','centlon','centlat','area','mean_olr'])
+        dates = gent('CP4_CC_precip_storms_over_box_area_'+str(size_of_storm)+'_lons_'+str(x1)+'_'+str(x2)+'_lat_'+str(y1)+'_'+str(y2)+'.csv', delimiter = ',', names = ['stormid','year','month','day','hour','llon','ulon','llat','ulat','centlon','centlat','area','mean_olr'])
         dates = np.sort(dates[:], axis = -1, order = ['stormid','mean_olr'])
         print dates.shape
         storms_to_keep = np.zeros((1,10),float)# You need to bear in mind that this code wants to track the point when the storm is at minimum OLR.
@@ -558,7 +557,7 @@ def main(x1, x2, y1, y2, size_of_storm):
                     temp[0,9] = line['mean_olr']
                     storms_to_keep = np.concatenate((storms_to_keep,temp),axis = 0)
 
-    np.savetxt('../OLR_12km_storms_to_keep_area_'+str(size_of_storm)+'_longitudes_'+str(x1)+'_'+str(x2)+'_'+str(y1)+'_'+str(y2)+'_1800Z.csv',storms_to_keep[:,:], delimiter = ',')
+    np.savetxt('OLR_12km_storms_to_keep_area_'+str(size_of_storm)+'_longitudes_'+str(x1)+'_'+str(x2)+'_'+str(y1)+'_'+str(y2)+'_1800Z.csv',storms_to_keep[:,:], delimiter = ',')
     all_midday_mslp = []
     all_midday_wind = []
     all_midday_wind3 = []
@@ -880,39 +879,39 @@ def main(x1, x2, y1, y2, size_of_storm):
                         all_OLR_1_perc.extend([OLR_1p])
                         all_area.extend([(float(ulo)-float(llo))*(float(ula)-float(lla))])
 
-    np.savetxt('../csvs/PAPER_CC_C2C4_STORMID_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_stormid, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_storm_area_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_area, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_99p_1p_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_OLR_1_perc, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_99p_10p_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_OLR_10_perc, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_99p_mean_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', OLRs, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_99p_col_int_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_col_w_p99, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_mean_col_int_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_col_w_mean, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_99p_precip_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_precip_99th_perc, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_precip_volume_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_precip_accum, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_mean_TCWV_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mass_mean_1200, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_mean_TCWV_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mass_mean_1800, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_mean_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1800_mean, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_min_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1800_1p, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_mean_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1200_mean, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_min_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1200_1p, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_max_buoyancy_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_buoyancy_1200_1p, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_max_zonal_shear_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_shear, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_max_horizontal_shear_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_hor_shear, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_max_buoyancy_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_buoyancy_1800_1p, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_max_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_w_1800, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_max_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_w_1200, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_mean_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mean_T15_1200, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_mean_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mean_T15_1800, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_1perc_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_1perc_T15_1800, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_mean_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_mslp, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_mean_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_wind, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1200Z_mean_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_wind3, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_mean_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_mslp_mean, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_mean_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind_mean, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_mean_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind3_mean, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_99p_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_mslp_1p, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_99p_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind_99p, delimiter = ',')
-    np.savetxt('../csvs/PAPER_CC_C2C4_1800Z_99p_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind3_99p, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_STORMID_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_stormid, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_storm_area_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_area, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_99p_1p_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_OLR_1_perc, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_99p_10p_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_OLR_10_perc, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_99p_mean_OLR_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', OLRs, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_99p_col_int_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_col_w_p99, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_mean_col_int_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_col_w_mean, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_99p_precip_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_precip_99th_perc, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_precip_volume_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_precip_accum, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_mean_TCWV_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mass_mean_1200, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_mean_TCWV_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mass_mean_1800, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_mean_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1800_mean, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_min_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1800_1p, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_mean_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1200_mean, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_min_omega_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_omega_1200_1p, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_max_buoyancy_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_buoyancy_1200_1p, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_max_zonal_shear_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_shear, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_max_horizontal_shear_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_hor_shear, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_max_buoyancy_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_buoyancy_1800_1p, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_max_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_w_1800, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_max_w_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_max_w_1200, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_mean_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mean_T15_1200, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_mean_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_mean_T15_1800, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_1perc_T15_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_1perc_T15_1800, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_mean_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_mslp, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_mean_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_wind, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1200Z_mean_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_midday_wind3, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_mean_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_mslp_mean, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_mean_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind_mean, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_mean_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind3_mean, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_99p_mslp_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_mslp_1p, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_99p_10m_wind_speed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind_99p, delimiter = ',')
+    np.savetxt('csvs/PAPER_CC_C2C4_1800Z_99p_10m_wind_speed_cubed_1800Z_storms_99p_rainfall_above_1mm_no_midday_rain.csv', all_eve_wind3_99p, delimiter = ',')
 
 
 

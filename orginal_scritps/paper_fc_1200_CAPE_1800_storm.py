@@ -31,13 +31,13 @@ def main(xstart,xend,ystart,yend,size_of_storm):
                 datu = np.asarray(fle)
                 for rw in range(0, datu.shape[0]):
                         if datu[rw,-1] == '4' or datu[rw,-1] == '2':
-				C4_FC_list.extend([datu[rw,0]])
+                            C4_FC_list.extend([datu[rw,0]])
         else:
                 fle = pd.read_fwf(flelist[element], header = None)
                 datu = np.asarray(fle)
                 for rw in range(0, datu.shape[0]):
                         if datu[rw,-1] == '4' or datu[rw,-1] == '2':
-				C4_CC_list.extend([datu[rw,0]])
+                            C4_CC_list.extend([datu[rw,0]])
                         #if datu[rw,-1] == '4':
                         #        C4_list.extend([datu[rw,0]])
                         #if datu[rw,-1] == '2':
@@ -161,208 +161,208 @@ def main(xstart,xend,ystart,yend,size_of_storm):
             flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/a04203/a04203_A1hr_mean_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0030-'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'2330.nc')
             fle_precip = iris.load_cube(str(flelist[0]))
     except IOError:
-	print 'No precip file'
+        print 'No precip file'
     else:
-			cube_precip = fle_precip.extract(xysmallslice)
-			p99 = cube_precip[17,:,:].collapsed(['latitude','longitude'], iris.analysis.PERCENTILE, percent = 99).data*3600.
-	                cube_midday_precip = cube_precip[11:15,:,:]
-	                cube_midday_precip = cube_midday_precip.collapsed(['time','latitude','longitude'], iris.analysis.MEAN).data
-			cube_precip = cube_precip[17,:,:].collapsed(['latitude','longitude'], iris.analysis.MEAN).data*3600.
-			print cube_midday_precip * 3600.
-#		if cube_midday_precip <= 0.1/3600: rubix2 = rubix2 + 1
-#		if p99 >= 1. and cube_midday_precip <= 0.1/3600.:
-			print 'extreme storm'
-			goodup = 0
-			try:
-			    flecount = []
-		            flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/f30204/f30204_A3hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0300-*0000.nc')
-			    flecount.extend([len(flelist)])
-			    if len(flelist) > 0:
-			            fle_T = iris.load_cube(str(flelist[0]))
-				    goodup = goodup + 1
-		            flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/f30205/f30205_A3hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0300*0000.nc')
-			    flecount.extend([len(flelist)])
-			    if len(flelist) > 0:
-				goodup = goodup + 1
-                    	        fle_q = iris.load_cube(str(flelist[0]))
-		            flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/c00409/c00409_A1hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0100-*0000.nc')
-			    flecount.extend([len(flelist)])
-			    if len(flelist) > 0:
-				goodup = goodup + 1
-                    	        fle_mslp = iris.load_cube(str(flelist[0]))
-		            flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/c03236/c03236_A1hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0100-*0000.nc')
-			    flecount.extend([len(flelist)])
-			    if len(flelist) > 0:
-				goodup = goodup + 1
-                    	        fle_T15 = iris.load_cube(str(flelist[0]))
-		            flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/c03237/c03237_A1hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0100-*0000.nc')
-			    flecount.extend([len(flelist)])
-			    if len(flelist) > 0:
-				goodup = goodup + 1
-                    	        fle_q15 = iris.load_cube(str(flelist[0]))
+            cube_precip = fle_precip.extract(xysmallslice)
+            p99 = cube_precip[17,:,:].collapsed(['latitude','longitude'], iris.analysis.PERCENTILE, percent = 99).data*3600.
+            cube_midday_precip = cube_precip[11:15,:,:]
+            cube_midday_precip = cube_midday_precip.collapsed(['time','latitude','longitude'], iris.analysis.MEAN).data
+            cube_precip = cube_precip[17,:,:].collapsed(['latitude','longitude'], iris.analysis.MEAN).data*3600.
+            print cube_midday_precip * 3600.
+#        if cube_midday_precip <= 0.1/3600: rubix2 = rubix2 + 1
+#        if p99 >= 1. and cube_midday_precip <= 0.1/3600.:
+            print 'extreme storm'
+            goodup = 0
+            try:
+                flecount = []
+                flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/f30204/f30204_A3hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0300-*0000.nc')
+                flecount.extend([len(flelist)])
+                if len(flelist) > 0:
+                    fle_T = iris.load_cube(str(flelist[0]))
+                    goodup = goodup + 1
+                    flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/f30205/f30205_A3hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0300*0000.nc')
+                flecount.extend([len(flelist)])
+                if len(flelist) > 0:
+                    goodup = goodup + 1
+                    fle_q = iris.load_cube(str(flelist[0]))
+                    flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/c00409/c00409_A1hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0100-*0000.nc')
+                flecount.extend([len(flelist)])
+                if len(flelist) > 0:
+                    goodup = goodup + 1
+                    fle_mslp = iris.load_cube(str(flelist[0]))
+                    flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/c03236/c03236_A1hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0100-*0000.nc')
+                flecount.extend([len(flelist)])
+                if len(flelist) > 0:
+                    goodup = goodup + 1
+                    fle_T15 = iris.load_cube(str(flelist[0]))
+                    flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/c03237/c03237_A1hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0100-*0000.nc')
+                flecount.extend([len(flelist)])
+                if len(flelist) > 0:
+                    goodup = goodup + 1
+                    fle_q15 = iris.load_cube(str(flelist[0]))
 
 ###################################################################################
 
-		            flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/f30201/f30201_A3hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0300-*0000.nc')
-			    flecount.extend([len(flelist)])
-		            if len(flelist) > 0:
-		                    fle_u = iris.load_cube(str(flelist[0]),xysmallslice)
-		                    goodup = goodup + 1
-		            flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/f30202/f30202_A3hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0300-*0000.nc')
-			    flecount.extend([len(flelist)])
-		            if len(flelist) > 0:
-		                    fle_v = iris.load_cube(str(flelist[0]),xysmallslice)
-		                    goodup = goodup + 1
+                    flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/f30201/f30201_A3hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0300-*0000.nc')
+                    flecount.extend([len(flelist)])
+                if len(flelist) > 0:
+                    fle_u = iris.load_cube(str(flelist[0]),xysmallslice)
+                    goodup = goodup + 1
+                    flelist = glob.glob('/nfs/a299/IMPALA/data/fc/4km/f30202/f30202_A3hr_inst_*4km_'+str(a[:4])+''+str(b[:2])+''+str(c[:2])+'0300-*0000.nc')
+                    flecount.extend([len(flelist)])
+                if len(flelist) > 0:
+                    fle_v = iris.load_cube(str(flelist[0]),xysmallslice)
+                    goodup = goodup + 1
 ###############################################################################
 
 
-			    print flecount
+                print flecount
 
-			except IOError:
-				print 'easy error'
-			else:
+            except IOError:
+                print 'easy error'
+            else:
 
-			    #if goodup > 6: rubix2 = rubix2 + 1
-			    if goodup > 6 and len(fle_u.coord('pressure').points) == 18:
-				cube_mslp = fle_mslp[11,:,:].extract(xysmallslice)
-				cube_mslp = cube_mslp.collapsed(['latitude','longitude'],iris.analysis.MEAN)
-				q = cube_mslp.data/100.
-				cube_u = fle_u[3,:,:]
-				cube_v = fle_v[3,:,:]
-				cube_u = cube_u.collapsed(['latitude','longitude'], iris.analysis.MEAN)
-				cube_v = cube_v.collapsed(['latitude','longitude'], iris.analysis.MEAN)
-                # What we want now is the direction and speed of the winds
-                # abs = (cube_u**2 + cube_v**2)**0.5
+                #if goodup > 6: rubix2 = rubix2 + 1
+                if goodup > 6 and len(fle_u.coord('pressure').points) == 18:
+                    cube_mslp = fle_mslp[11,:,:].extract(xysmallslice)
+                    cube_mslp = cube_mslp.collapsed(['latitude','longitude'],iris.analysis.MEAN)
+                    q = cube_mslp.data/100.
+                    cube_u = fle_u[3,:,:]
+                    cube_v = fle_v[3,:,:]
+                    cube_u = cube_u.collapsed(['latitude','longitude'], iris.analysis.MEAN)
+                    cube_v = cube_v.collapsed(['latitude','longitude'], iris.analysis.MEAN)
+                    # What we want now is the direction and speed of the winds
+                    # abs = (cube_u**2 + cube_v**2)**0.5
 
-				cube_T15 = fle_T15[11,:,:].extract(xysmallslice)
-				cube_T15 = cube_T15.collapsed(['latitude','longitude'],iris.analysis.MEAN)
-				cube_q15 = fle_q15[11,:,:].extract(xysmallslice)
-				cube_q15 = cube_q15.collapsed(['latitude','longitude'],iris.analysis.MEAN)
-				if q > 975:
-		    			xysmallslice_850_upwards = iris.Constraint(pressure = lambda cell: 975. >= cell>=100., longitude = lambda cell: float(llo) <= cell <= float(ulo), latitude = lambda cell: float(lla) <= cell <= float(ula))
-				else:
-		    			xysmallslice_850_upwards = iris.Constraint(pressure = lambda cell: float(q) >= cell>=100., longitude = lambda cell: float(llo) <= cell <= float(ulo), latitude = lambda cell: float(lla) <= cell <= float(ula))
-				cube_T = fle_T[3,:,:].extract(xysmallslice_850_upwards)
-				cube_q = fle_q[3,:,:].extract(xysmallslice_850_upwards)
-				pressure_shape = cube_T.data.shape[0]
-				# all_cube = cube_T[:,:7,1]
-                # Because we are now using near the surface, we want to make sure that T is realistic
-				T_data = cube_T.data
-				q_data = cube_q.data
-				T_collapsed = np.zeros((T_data.shape[0]),float)
-				q_collapsed = np.zeros((q_data.shape[0]), float)
-				for p in range(0, T_data.shape[0]):
-					for y in range(0, T_data.shape[1]):
-						for x in range(0, T_data.shape[2]):
-							if T_data[p,y,x] < 100:
-								T_data[p,y,x] = float('nan')
-								q_data[p,y,x] = float('nan')
-					T_collapsed[p] = np.nanmean(T_data[p,:,:])
-					q_collapsed[p] = np.nanmean(q_data[p,:,:])
-				cube_T = cube_T.collapsed(['latitude','longitude'], iris.analysis.MEAN)
-				cube_q = cube_q.collapsed(['latitude','longitude'], iris.analysis.MEAN)
-				cube_T.data = T_collapsed
-				cube_q.data = q_collapsed
-				cube_pressures = cube_q.copy()
-				pressures = cube_T[:,:].coord('pressure').points
-				pressures = np.ndarray.tolist(pressures)
-				pressures.extend([q])
-				pressures = np.asarray(pressures)
-				fake_T = fle_T[3,:pressure_shape+1,1,1]
-				fake_q = fle_q[3,:pressure_shape+1,1,1]
-				fake_T.data[:pressure_shape] = T_collapsed
-				fake_T.data[pressure_shape] = cube_T15.data
-				fake_q.data[:pressure_shape] = q_collapsed
-				fake_q.data[pressure_shape] = cube_q15.data
-				cube_T = fake_T
-				cube_q = fake_q
-#				cube_RH = cube_q.copy()
-#				cube_dewp = cube_q.copy()
-				cube_pressures = cube_q.copy()
-				Ps = np.zeros((len(pressures)),float)
-				cube_pressures.data = pressures*100
-				if np.sum(all_cube) < 1:
-					all_cube = np.zeros((1, len(pressures), 9), float)
-				else:
-					temp_cube = np.zeros((1, len(pressures), 9), float)
+                    cube_T15 = fle_T15[11,:,:].extract(xysmallslice)
+                    cube_T15 = cube_T15.collapsed(['latitude','longitude'],iris.analysis.MEAN)
+                    cube_q15 = fle_q15[11,:,:].extract(xysmallslice)
+                    cube_q15 = cube_q15.collapsed(['latitude','longitude'],iris.analysis.MEAN)
+                    if q > 975:
+                            xysmallslice_850_upwards = iris.Constraint(pressure = lambda cell: 975. >= cell>=100., longitude = lambda cell: float(llo) <= cell <= float(ulo), latitude = lambda cell: float(lla) <= cell <= float(ula))
+                    else:
+                            xysmallslice_850_upwards = iris.Constraint(pressure = lambda cell: float(q) >= cell>=100., longitude = lambda cell: float(llo) <= cell <= float(ulo), latitude = lambda cell: float(lla) <= cell <= float(ula))
+                    cube_T = fle_T[3,:,:].extract(xysmallslice_850_upwards)
+                    cube_q = fle_q[3,:,:].extract(xysmallslice_850_upwards)
+                    pressure_shape = cube_T.data.shape[0]
+                    # all_cube = cube_T[:,:7,1]
+                    # Because we are now using near the surface, we want to make sure that T is realistic
+                    T_data = cube_T.data
+                    q_data = cube_q.data
+                    T_collapsed = np.zeros((T_data.shape[0]),float)
+                    q_collapsed = np.zeros((q_data.shape[0]), float)
+                    for p in range(0, T_data.shape[0]):
+                        for y in range(0, T_data.shape[1]):
+                            for x in range(0, T_data.shape[2]):
+                                if T_data[p,y,x] < 100:
+                                    T_data[p,y,x] = float('nan')
+                                    q_data[p,y,x] = float('nan')
+                        T_collapsed[p] = np.nanmean(T_data[p,:,:])
+                        q_collapsed[p] = np.nanmean(q_data[p,:,:])
+                    cube_T = cube_T.collapsed(['latitude','longitude'], iris.analysis.MEAN)
+                    cube_q = cube_q.collapsed(['latitude','longitude'], iris.analysis.MEAN)
+                    cube_T.data = T_collapsed
+                    cube_q.data = q_collapsed
+                    cube_pressures = cube_q.copy()
+                    pressures = cube_T[:,:].coord('pressure').points
+                    pressures = np.ndarray.tolist(pressures)
+                    pressures.extend([q])
+                    pressures = np.asarray(pressures)
+                    fake_T = fle_T[3,:pressure_shape+1,1,1]
+                    fake_q = fle_q[3,:pressure_shape+1,1,1]
+                    fake_T.data[:pressure_shape] = T_collapsed
+                    fake_T.data[pressure_shape] = cube_T15.data
+                    fake_q.data[:pressure_shape] = q_collapsed
+                    fake_q.data[pressure_shape] = cube_q15.data
+                    cube_T = fake_T
+                    cube_q = fake_q
+    #                cube_RH = cube_q.copy()
+    #                cube_dewp = cube_q.copy()
+                    cube_pressures = cube_q.copy()
+                    Ps = np.zeros((len(pressures)),float)
+                    cube_pressures.data = pressures*100
+                    if np.sum(all_cube) < 1:
+                        all_cube = np.zeros((1, len(pressures), 9), float)
+                    else:
+                        temp_cube = np.zeros((1, len(pressures), 9), float)
 
-				if len(pressures) == 18:
-					for p in range(0, len(pressures)):
-                        if 710. >= pressures[p] > 690.:
-                            RH_650hPa.extend([(0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))])
-						if all_cube.shape[0] == 1:
-							all_cube[0,p,4] = (0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))
-							all_cube[0,p,5] = meteocalc.dew_point(temperature = cube_T[p].data - 273.16, humidity=all_cube[0,p,4])
-						else:
-							temp_cube[0,p,4] = (0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))
-							temp_cube[0,p,5] = meteocalc.dew_point(temperature = cube_T[p].data - 273.16, humidity = temp_cube[0,p,4])
-						if p < len(pressures)-1:
-							if all_cube.shape[0] == 1:
-								all_cube[0,p,1] = cube_T[p].data*((cube_mslp.data/cube_pressures.data[p])**(1./5.257) - 1)/0.0065
-							else:
-								temp_cube[0,p,1] = cube_T[p].data*((cube_mslp.data/cube_pressures.data[p])**(1./5.257) - 1)/0.0065
+                    if len(pressures) == 18:
+                        for p in range(0, len(pressures)):
+                            if 710. >= pressures[p] > 690.:
+                                RH_650hPa.extend([(0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))])
+                            if all_cube.shape[0] == 1:
+                                all_cube[0,p,4] = (0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))
+                                all_cube[0,p,5] = meteocalc.dew_point(temperature = cube_T[p].data - 273.16, humidity=all_cube[0,p,4])
+                            else:
+                                temp_cube[0,p,4] = (0.263 * cube_q.data[p] * cube_pressures.data[p])/2.714**((17.67*(cube_T.data[p] - 273.16))/(cube_T.data[p] - 29.65))
+                                temp_cube[0,p,5] = meteocalc.dew_point(temperature = cube_T[p].data - 273.16, humidity = temp_cube[0,p,4])
+                            if p < len(pressures)-1:
+                                if all_cube.shape[0] == 1:
+                                    all_cube[0,p,1] = cube_T[p].data*((cube_mslp.data/cube_pressures.data[p])**(1./5.257) - 1)/0.0065
+                                else:
+                                    temp_cube[0,p,1] = cube_T[p].data*((cube_mslp.data/cube_pressures.data[p])**(1./5.257) - 1)/0.0065
 
-						else:
-							if all_cube.shape[0] == 1:
-								all_cube[0,p,1] = 1.5
-							else:
-								temp_cube[0,p,1] = 1.5
+                            else:
+                                if all_cube.shape[0] == 1:
+                                    all_cube[0,p,1] = 1.5
+                                else:
+                                    temp_cube[0,p,1] = 1.5
 
-# So, here we also want to compute CAPE and CIN for each storm
-
-
+    # So, here we also want to compute CAPE and CIN for each storm
 
 
 
 
 
-					if all_cube.shape[0] == 1:
-						all_cube[0,:,0] = cube_pressures.data/100
-						all_cube[0,:,2] = cube_T.data
-						all_cube[0,:,3] = cube_q.data
-						all_cube[0,:,6] = p99
-				        all_cube[0,:,2] = all_cube[0,:,2] - 273.16
-						all_cube[0,:,7] = cube_u.data
-						all_cube[0,:,8] = cube_v.data
- 				                #mydata = dict(zip(('hght','pres','temp','dwpt'),(all_cube[:,1].data[::-1],all_cube[:,0].data[::-1], all_cube[:,2].data[::-1],all_cube[:,5].data[::-1])))
-						print all_cube[0,::-1,0]
- 				                mydata = dict(zip(('hght','pres','temp','dwpt'),(all_cube[0,::-1,1],all_cube[0,::-1,0], all_cube[0,::-1,2],all_cube[0,::-1,5])))
-				                S=sk.Sounding(soundingdata=mydata)
-				                parcel = S.get_parcel('mu')
-				                P_lcl,P_lfc,P_el,CAPE,CIN=S.get_cape(*parcel)
-				                CAPE_stats[cntr,0] = P_lcl
-				                CAPE_stats[cntr,1] = P_lfc
-				                CAPE_stats[cntr,2] = P_el
-				                CAPE_stats[cntr,3] = CAPE
-				                CAPE_stats[cntr,4] = CIN
-						CAPE_stats[cntr,5] = storms_to_keep[rw,8]
-						cntr = cntr + 1
 
-					else:
-						temp_cube[0,:,0] = cube_pressures.data/100
-						temp_cube[0,:,2] = cube_T.data
-						temp_cube[0,:,3] = cube_q.data
-						temp_cube[0,:,6] = p99
-				                temp_cube[0,:,2] = temp_cube[0,:,2] - 273.16
-						temp_cube[0,:,7] = cube_u.data
-						temp_cube[0,:,8] = cube_v.data
- 				                mydata = dict(zip(('hght','pres','temp','dwpt'),(temp_cube[0,::-1,1],temp_cube[0,::-1,0], temp_cube[0,::-1,2],temp_cube[0,::-1,5])))
-				                S=sk.Sounding(soundingdata=mydata)
-				                parcel = S.get_parcel('mu')
-				                P_lcl,P_lfc,P_el,CAPE,CIN=S.get_cape(*parcel)
-				                CAPE_stats[cntr,0] = P_lcl
-				                CAPE_stats[cntr,1] = P_lfc
-				                CAPE_stats[cntr,2] = P_el
-				                CAPE_stats[cntr,3] = CAPE
-				                CAPE_stats[cntr,4] = CIN
-						CAPE_stats[cntr,5] = storms_to_keep[rw,8]
-						cntr = cntr + 1
-					try:
-					#if all_cube.shape[0] > 1:
-						if temp_cube.shape[1] == all_cube.shape[1]:
-							all_cube = np.concatenate((all_cube, temp_cube), axis = 0)
-					except UnboundLocalError or ValueError:
-						continue
+
+                        if all_cube.shape[0] == 1:
+                            all_cube[0,:,0] = cube_pressures.data/100
+                            all_cube[0,:,2] = cube_T.data
+                            all_cube[0,:,3] = cube_q.data
+                            all_cube[0,:,6] = p99
+                            all_cube[0,:,2] = all_cube[0,:,2] - 273.16
+                            all_cube[0,:,7] = cube_u.data
+                            all_cube[0,:,8] = cube_v.data
+                            #mydata = dict(zip(('hght','pres','temp','dwpt'),(all_cube[:,1].data[::-1],all_cube[:,0].data[::-1], all_cube[:,2].data[::-1],all_cube[:,5].data[::-1])))
+                            print all_cube[0,::-1,0]
+                            mydata = dict(zip(('hght','pres','temp','dwpt'),(all_cube[0,::-1,1],all_cube[0,::-1,0], all_cube[0,::-1,2],all_cube[0,::-1,5])))
+                            S=sk.Sounding(soundingdata=mydata)
+                            parcel = S.get_parcel('mu')
+                            P_lcl,P_lfc,P_el,CAPE,CIN=S.get_cape(*parcel)
+                            CAPE_stats[cntr,0] = P_lcl
+                            CAPE_stats[cntr,1] = P_lfc
+                            CAPE_stats[cntr,2] = P_el
+                            CAPE_stats[cntr,3] = CAPE
+                            CAPE_stats[cntr,4] = CIN
+                            CAPE_stats[cntr,5] = storms_to_keep[rw,8]
+                            cntr = cntr + 1
+
+                        else:
+                            temp_cube[0,:,0] = cube_pressures.data/100
+                            temp_cube[0,:,2] = cube_T.data
+                            temp_cube[0,:,3] = cube_q.data
+                            temp_cube[0,:,6] = p99
+                            temp_cube[0,:,2] = temp_cube[0,:,2] - 273.16
+                            temp_cube[0,:,7] = cube_u.data
+                            temp_cube[0,:,8] = cube_v.data
+                            mydata = dict(zip(('hght','pres','temp','dwpt'),(temp_cube[0,::-1,1],temp_cube[0,::-1,0], temp_cube[0,::-1,2],temp_cube[0,::-1,5])))
+                            S=sk.Sounding(soundingdata=mydata)
+                            parcel = S.get_parcel('mu')
+                            P_lcl,P_lfc,P_el,CAPE,CIN=S.get_cape(*parcel)
+                            CAPE_stats[cntr,0] = P_lcl
+                            CAPE_stats[cntr,1] = P_lfc
+                            CAPE_stats[cntr,2] = P_el
+                            CAPE_stats[cntr,3] = CAPE
+                            CAPE_stats[cntr,4] = CIN
+                            CAPE_stats[cntr,5] = storms_to_keep[rw,8]
+                            cntr = cntr + 1
+                        try:
+                        #if all_cube.shape[0] > 1:
+                            if temp_cube.shape[1] == all_cube.shape[1]:
+                                all_cube = np.concatenate((all_cube, temp_cube), axis = 0)
+                        except UnboundLocalError or ValueError:
+                            continue
  all_cube = np.average(all_cube, axis = 0)
  np.savetxt('FC_c2c4_storms_midday_stats_for_TEPHI_1800Z_storms.csv', all_cube, delimiter = ',')
  np.savetxt('../csvs/FC_c2c4_1200_CAPE_CIN_1800_STORMS.csv', CAPE_stats, delimiter = ',')
