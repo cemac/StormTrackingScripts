@@ -89,13 +89,13 @@ class storminbox(object):
             df = pd.read_csv('filelist.csv', sep=',')
             return df
         except IOError:
-            df = pd.DataFrame()
-            df2 = pd.DataFrame(columns=['file'], index=[range(0, len(df))])
-            df['file'] = (glob.glob(self.froot+'*/a04203*4km*.txt'))
-            for rw in df.itertuples():
-                if rw.file[90:92] in [str(x).zfill(2) for x in range(6, 10)]:
-                    df2.loc[rw[0]] = 0
-                    df2['file'].loc[rw[0]] = rw.file
+            df2 = pd.DataFrame(columns=['file'])
+            i = 0
+            for rw in glob.iglob(self.froot+'*/a04203*4km*.txt'):
+                if rw.file[90:92] in [str(x).zfill(2) for x in range(4, 7)]:
+                    i += 1
+                    df2.loc[i] = 0
+                    df2['file'].loc[i] = rw
             df = df2.reset_index(drop=True)
             df.to_csv('filelist.csv', sep=',')
         # Storms we want have this infor
@@ -129,21 +129,27 @@ class storminbox(object):
             storms[['centlat', 'centlon']] = storms['centroid'].str.split(',', expand=True)
             # centroid lat and lon are reffering to indicies written by matlab
             # i.e. +1 to the indice in python.
-            for rw2 in storms.itertuples():
-                storms['centlon'].loc[rw2[0]] = self.lon[int(pd.to_numeric(rw2.centlon)-1)]
-                storms['centlat'].loc[rw2[0]] = self.lat[int(pd.to_numeric(rw2.centlat[9::])-1)]
-            storms = storms[storms.centlon <= self.x2].reset_index(drop=True)
-            storms = storms[storms.centlon >= self.x1].reset_index(drop=True)
-            storms = storms[storms.centlat <= self.y2].reset_index(drop=True)
-            storms = storms[storms.centlat >= self.y1].reset_index(drop=True)
+            centlons = self.lon[np.array(pd.to_numeric(storms.centlon)
+                                             - 1).astype(int)][0]
+            centlats = self.lat[np.array(pd.to_numeric(storms.centlat.str[9::])
+                                             - 1).astype(int)][0]
+            storms['centlon'] = centlons
+            storms['centlat'] = centlats
+            # get rid of irrelvant storms
+            storms = storms[storms.centlon <= x2].reset_index(drop=True)
+            storms = storms[storms.centlon >= x1].reset_index(drop=True)
+            storms = storms[storms.centlat <= y2].reset_index(drop=True)
+            storms = storms[storms.centlat >= y1].reset_index(drop=True)
             # Any in this file?
-            if len(storms.index) == 0:
+            if len(storms.index) <= 1:
                 continue
             # lets create a data frame of the varslist components
             # join DataFrame to stormsdf and move on to next file.
             # Make a dataframe to fill this time steps storm data
             stormsdf2 = pd.DataFrame(columns=self.varslist)
             stormsdf2.stormid = storms.no
+            stormsdf2.centlon = storms.centlon
+            stormsdf2.centlat = storms.centlat
             datestamp = pd.to_datetime(cfile[86:98])
             stormsdf2.month = datestamp.month
             stormsdf2.day = datestamp.day
