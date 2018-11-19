@@ -6,14 +6,14 @@ from numpy import genfromtxt as gent
 from Pdataminer_funcsv2 import dm_functions
 import pandas as pd
 
-start_time = time.time()
+#start_time = time.time()
 x1, x2 = [345, 375]
 y1, y2 = [10, 18]
 idstring = 'ptest'
 size_of_storm = 5000
-c = pstromsinabox.StormInBox(x1, x2, y1, y2, size_of_storm, idstring)
-c.genstormboxcsv()
-print("--- %s seconds ---" % (time.time() - start_time))
+#c = pstromsinabox.StormInBox(x1, x2, y1, y2, size_of_storm, idstring)
+#c.genstormboxcsv()
+#print("--- %s seconds ---" % (time.time() - start_time))
 start_time1 = time.time()
 fcorcc = 0
 csvroot = ('ptestfc', ' ptestcc')
@@ -29,7 +29,7 @@ dmf = dm_functions(dataroot[fcorcc], CAPE='Y', TEPHI='Y')
 try:
     varlist = ['year', 'month', 'day', 'hour', 'llon', 'ulon', 'llat',
                'ulat', 'stormid', 'mean_olr']
-    storms_to_keep = pd.read_csv(csvname, sep=',', names=varlist)
+    storms_to_keep = pd.read_csv(csvname, sep=',')
 except IOError:
     print('Generating csv file of storms to keep ...')
     # if its not there we'll have to generate it from CP4

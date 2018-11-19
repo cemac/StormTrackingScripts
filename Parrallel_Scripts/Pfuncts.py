@@ -80,6 +80,7 @@ def genslice(latlons, n1=None, n2=None):
         n1: pressure low
         n2: pressure high
     '''
+    llon, llat, ulat, ulon = latlons
     if n1 is None and n2 is None:
         xysmallslice = iris.Constraint(longitude=lambda cell: float(llon)
                                        <= cell <= float(ulon),
