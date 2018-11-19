@@ -129,7 +129,7 @@ class StormInBox(object):
                 stormsdf2.stormid = storms.no
                 datestamp = pd.to_datetime(cfile[86:98])
                 stormsdf2.month = datestamp.month
-                stormsdf2.day = datestamp.day.astype(int)
+                stormsdf2.day = (datestamp.day).astype(int)
                 stormsdf2.hour = datestamp.hour.astype(int)
                 stormsdf2.year = datestamp.year.astype(int)
                 stormsdf2.area = storms.area

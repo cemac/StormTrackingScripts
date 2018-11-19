@@ -55,10 +55,8 @@ class StormInBox(object):
     def __init__(self, x1, x2, y1, y2, size_of_storm, idstring, run='cc', root=None):
 
         self.size = size_of_storm
-        self.x1 = x1
-        self.x2 = x2
-        self.y1 = y1
-        self.y2 = y2
+        self.x1, self.x2, self.y1, self.y2 = [x1, x2, y1, y2]
+        self.m1, self.m2 = [6, 10]
         self.idstring = idstring
         self.varslist = ['stormid', 'year', 'month', 'day', 'hour', 'llon',
                          'ulon', 'llat', 'ulat', 'centlon', 'centlat', 'area',
@@ -96,8 +94,8 @@ class StormInBox(object):
         except IOError:
             df2 = pd.DataFrame(columns=['file'])
             i = 0
-            for rw in glob.iglob(self.froot+'*/a04203*4km*.txt'):
-                if rw.file[90:92] in [str(x).zfill(2) for x in range(4, 7)]:
+            for rw in glob.iglob(self.froot+'*/a04203*4km*0030-*2330*.txt'):
+                if rw.file[90:92] in [str(x).zfill(2) for x in range(self.m1, self.m2)]:
                     i += 1
                     df2.loc[i] = 0
                     df2['file'].loc[i] = rw
@@ -205,7 +203,8 @@ class StormInBox(object):
                 return
         df = self.create_dataframe()
         pstorms = Pfuncts.parallelize_dataframe(df, self.find_the_storms, nice)
-        pstorms.to_csv(self.idstring + 'storms_over_box_area' +
-                       str(self.size)
-                       + '_lons_' + str(self.x1) + '_' + str(self.x2) +
-                       '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')
+        pstormsdf = pstorms.drop_duplicates(subset='stormid', keep='first',
+                                            inplace=False).reset_index(drop=True)
+        pstormsdf.to_csv(self.idstring + 'storms_over_box_area' + str(self.size)
+                         + '_lons_' + str(self.x1) + '_' + str(self.x2) +
+                         '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')

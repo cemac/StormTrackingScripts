@@ -33,7 +33,7 @@ import meteocalc
 from skewt import SkewT as sk
 from tqdm import tqdm
 import Pfuncts
-from Pfuncts import genslice, cube99, cubemean
+from Pfuncts import *
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
@@ -379,8 +379,8 @@ class dm_functions(object):
         csv root = file pattern for file to be Written
         '''
         for row in stormsdf.itertuples():
-            storminfo = (str(int(row.year)) + str(int(row.month)).zfill(2) +
-                         str(int(row.day)).zfill(2))
+            storminfo = (str(row.year) + str(row.month).zfill(2) +
+                         str(row.day).zfill(2))
             idx = row[0]
             # If any files with structure exsit
             flist = self.gen_flist(storminfo, self.vars['varname'],
@@ -464,38 +464,3 @@ class dm_functions(object):
         df = storms_to_keep
         pstorms = Pfuncts.parallelize_dataframe(df, self.gen_vars, nice)
         pstorms.to_csv(csvroot+'_standard.csv', sep=',')
-
-
-def vels(flist, xy):
-    uf = flist[flist.varname == 'u10'].file
-    u = iris.load_cube(uf, xy)
-    vf = flist[flist.varname == 'v10'].file
-    v = iris.load_cube(vf, xy)
-    return u, v
-
-
-def olrs(flist, xy):
-    olr_f = flist[flist.varname == 'olr'].file
-    OLR = iris.load_cube(olr_f).extract(xy)
-    OLR = OLR[17, :, :]
-    olr_10p = cube99(OLR, per=10)
-    olr_1p = cube99(OLR, per=1)
-    return olr_10p, olr_1p
-
-
-def colws(flist, xy):
-    colwf = flist[flist.varname == 'col_w'].file
-    colw = iris.load_cube(colwf).extract(xy)
-    varn = colw[5, :, :, :]
-    varmean = cubemean(varn).data
-    varn99p = cube99(varn)
-    return varn99p, varmean
-
-def precips(flist, xy):
-    precipfile = flist[flist.varname == 'precip'].file
-    precip = iris.load_cube(precipfile).extract(xy)
-    precipm = precip[11:15, :, :]
-    precip = precip[17, :, :]
-    precip99 = cube99(precip)
-    precip = np.ndarray.tolist(precip99)
-    return precipm, precip99, precip
