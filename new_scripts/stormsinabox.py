@@ -21,10 +21,12 @@ Attributes:
 """
 
 
+import sys
 import glob
 import iris
 import pandas as pd
 import numpy as np
+import gc
 
 
 class storminbox(object):
@@ -38,53 +40,84 @@ class storminbox(object):
         y1(int): latitude index South
         y2(int): latitude index North
         size_of_storm(int): size of storm in km e.g 5000
+        varslist: variables to be collected
     '''
-    def __init__(self, x1, x2, y1, y2, size_of_storm, idstring):
+    def __init__(self, x1, x2, y1, y2, size_of_storm, idstring, run='cc', root=None):
 
         self.varslist = ['stormid', 'year', 'month', 'day', 'hour', 'llon',
                          'ulon', 'llat', 'ulat', 'centlon', 'centlat', 'area',
                          'mean_olr']
-        stormsdf = pd.DataFrame(columns=self.varslist)
+        self.size = size_of_storm
+        self.idstring = idstring
+        self.x1, self.x2, self.y1, self.y2 = [x1, x2, y1, y2]
+        # Empty dataframe to be populated
+        self.stormsdf = pd.DataFrame(columns=self.varslist)
+        # Get grid lat lons
         fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
                  'ah261_4km_200012070030-200012072330.nc')
         cube = iris.load(fname)[1]
         self.lon = cube.coord('longitude').points
         self.lat = cube.coord('latitude').points
-        froot = '/nfs/a277/IMPALA/data/4km/precip_tracking_12km_hourly/'
-        df = pd.DataFrame()
-        df2 = pd.DataFrame(columns=['file'])
-        i = 0
+        # Data root, will depend on
+        if run == 'cc':
+            root = '/nfs/a277/IMPALA/data/4km/'
+        elif run == 'fc':
+            root = '/nfs/a299/IMPALA/data/fc/4km/'
+        else:
+            sys.exit('Please specify data root eg. /nfs/a299/IMPALA/data/fc/4km/')
+        self.froot = root + 'precip_tracking_12km_hourly/'
+
+    def stormsinthebox(self):
+        '''stormsinthebox
+            Description: search through storm files (iterable glob from file
+            pattern), find the files for april to july. Read the file and
+            collect the storms in the selected area and size. Dump to csv.
+            Attributes:
+                froot: where the data is stored for this run
+                cols: header names of csv file read
+
+            Returns:
+                stormsdf2: csv dump of generated pandas dataframe
+
+        '''
         cols = ['storm', 'no', 'area', 'centroid', 'box', 'life', 'u', 'v',
                 'mean', 'min', 'max', 'accreted', 'parent', 'child', 'cell']
-        for rw in glob.iglob(froot+'*/a04203*4km*txt'):
+        for rw in glob.iglob(self.froot+'*/a04203*4km*txt'):
             if rw[90:92] in [str(x).zfill(2) for x in range(4, 7)]:
-                i += 1
                 cfile = rw
-                vari = pd.read_csv(cfile, names=cols,  header=None,
-                                   delim_whitespace=True)
-                # the txt files have stoms and then child cells with surplus info
-                var2 = vari[pd.notnull(vari['mean'])]
-                size = var2.area.str[5::]
-                var2.loc[:, 'area'] = pd.to_numeric(size)*144
+                # read in whole csv
+                allvars = pd.read_csv(cfile, names=cols,  header=None,
+                                      delim_whitespace=True)
+                # the txt files have stoms and then child cells with
+                # surplus info select parent storms
+                parent = allvars[pd.notnull(allvars['mean'])]
+                size = parent.area.str[5::]
+                parent.loc[:, 'area'] = pd.to_numeric(size)*144
                 # If it meets our size criteria
-                storms = var2[var2.area >= size_of_storm].reset_index(drop=True)
-                # And is the centroid in our location
-                storms[['centlat', 'centlon']] = storms['centroid'].str.split(',', expand=True)
-                # centroid lat and lon are reffering to indicies written by matlab
-                # i.e. +1 to the indice in python.
-                centlons = self.lon[np.array(pd.to_numeric(storms.centlon)
-                                             - 1).astype(int)][0]
-                centlats = self.lat[np.array(pd.to_numeric(storms.centlat.str[9::])
-                                             - 1).astype(int)][0]
-                storms['centlon'] = centlons
-                storms['centlat'] = centlats
+                storms = parent[parent.area >= self.size].reset_index(drop=True)
                 # get rid of irrelvant storms
-                storms = storms[storms.centlon <= x2].reset_index(drop=True)
-                storms = storms[storms.centlon >= x1].reset_index(drop=True)
-                storms = storms[storms.centlat <= y2].reset_index(drop=True)
-                storms = storms[storms.centlat >= y1].reset_index(drop=True)
-                # Any in this file?
-                if len(storms.index) == 0:
+                # box: defines the rectangle around the storm
+                # [minlatix, minlonix, nlats, nlons]
+                # llat, llon, ulat, ulon
+                storms[['llat', 'llon', 'nlat', 'nlon']] = storms['box'].str.split(',', expand=True)
+                storms.llon = self.lon[np.array([pd.to_numeric(storms.llon)
+                                                - 1]).astype(int)][0]
+                llats = storms.llat.str[4::]
+                storms.llat = self.lat[np.array([pd.to_numeric(llats)
+                                                - 1]).astype(int)][0]
+                storms.nlon = self.lon[np.array([pd.to_numeric(storms.nlon) -
+                                                 1]).astype(int)][0]
+                storms.nlat = self.lat[np.array([pd.to_numeric(storms.nlat) -
+                                                 1]).astype(int)][0]
+                storms['centlon'] = (storms.nlon + storms.llon) / 2.0
+                storms['centlat'] = (storms.nlat + storms.llat) / 2.0
+                storms = storms[self.x1 <= storms.centlon]
+                storms = storms[storms.centlon <= self.x2]
+                storms = storms[self.y1 <= storms.centlat]
+                # Final criteria so reset the indices to 0-N
+                storms = storms[storms.centlat <= self.y2].reset_index(drop=True)
+                if storms.empty:
+                    gc.collect()
                     continue
                 # lets create a data frame of the varslist components
                 # join DataFrame to stormsdf and move on to next file.
@@ -97,23 +130,15 @@ class storminbox(object):
                 stormsdf2.hour = datestamp.hour
                 stormsdf2.year = datestamp.year
                 stormsdf2.area = storms.area
+                stormsdf2.llon = storms.llon
+                stormsdf2.llat = storms.llat
+                stormsdf2.ulon = storms.nlon
+                stormsdf2.ulat = storms.nlat
                 stormsdf2.centlon = storms.centlon
                 stormsdf2.centlat = storms.centlat
                 stormsdf2.mean_olr = storms['mean'].str[5::]
-                # box: defines the rectangle around the storm
-                # [minlatix, minlonix, nlats, nlons]
-                # llat, llon, ulat, ulon
-                storms[['llat', 'llon', 'nlat', 'nlon']] = storms['box'].str.split(',', expand=True)
-                stormsdf2.llon = self.lon[np.array([pd.to_numeric(storms.llon)
-                                          - 1]).astype(int)][0]
-                stormsdf2.llat = self.lat[np.array([pd.to_numeric(storms.llat.str[4::])
-                                          - 1]).astype(int)][0]
-                stormsdf2.ulon = self.lon[np.array([pd.to_numeric(storms.nlon)
-                          + pd.to_numeric(storms.llon) - 1]).astype(int)][0]
-                stormsdf2.ulat = self.lat[np.array([pd.to_numeric(storms.nlat) +
-                          pd.to_numeric(storms.llat.str[4::]) - 1]).astype(int)][0]
-                # Append to whole area
-                stormsdf = pd.concat([stormsdf, stormsdf2]).reset_index(drop=True)
-        stormsdf.to_csv(idstring + 'storms_over_box_area' + str(size_of_storm)
-                        + '_lons_' + str(x1) + '_' + str(x2) + '_lat_' +
-                        str(y1) + '_' + str(y2)+'.csv')
+                self.stormsdf = pd.concat([self.stormsdf, stormsdf2]).reset_index(drop=True)
+                gc.collect()  # Clear cache of unreference memeory
+        self.stormsdf.to_csv(self.idstring + 'storms_over_box_area' + str(self.size)
+                        + '_lons_' + str(self.x1) + '_' + str(self.x2) +
+                        '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')
