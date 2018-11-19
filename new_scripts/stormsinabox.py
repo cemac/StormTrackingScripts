@@ -28,6 +28,7 @@ import pandas as pd
 import numpy as np
 import iris
 
+
 class StormInBox(object):
     '''Description
        Stage 1: currently a suit of functions for finding information on
@@ -49,6 +50,7 @@ class StormInBox(object):
         self.size = size_of_storm
         self.idstring = idstring
         self.x1, self.x2, self.y1, self.y2 = [x1, x2, y1, y2]
+        self.m1, self.m2 = [6, 10]
         # Empty dataframe to be populated
         self.stormsdf = pd.DataFrame(columns=self.varslist)
         # Get grid lat lons
@@ -81,8 +83,9 @@ class StormInBox(object):
         '''
         cols = ['storm', 'no', 'area', 'centroid', 'box', 'life', 'u', 'v',
                 'mean', 'min', 'max', 'accreted', 'parent', 'child', 'cell']
-        for rw in glob.iglob(self.froot+'*/a04203*4km*txt'):
-            if rw[90:92] in [str(x).zfill(2) for x in range(4, 7)]:
+        # Only 1 file per day!
+        for rw in glob.iglob(self.froot+'*/a04203*4km*0030-*2330_*.txt'):
+            if rw[90:92] in [str(x).zfill(2) for x in range(self.m1, self.m2)]:
                 cfile = rw
                 # read in whole csv
                 allvars = pd.read_csv(cfile, names=cols, header=None,
@@ -126,9 +129,9 @@ class StormInBox(object):
                 stormsdf2.stormid = storms.no
                 datestamp = pd.to_datetime(cfile[86:98])
                 stormsdf2.month = datestamp.month
-                stormsdf2.day = datestamp.day
-                stormsdf2.hour = datestamp.hour
-                stormsdf2.year = datestamp.year
+                stormsdf2.day = datestamp.day.astype(int)
+                stormsdf2.hour = datestamp.hour.astype(int)
+                stormsdf2.year = datestamp.year.astype(int)
                 stormsdf2.area = storms.area
                 stormsdf2.llon = storms.llon
                 stormsdf2.llat = storms.llat
@@ -139,6 +142,8 @@ class StormInBox(object):
                 stormsdf2.mean_olr = storms['mean'].str[5::]
                 self.stormsdf = pd.concat([self.stormsdf, stormsdf2]).reset_index(drop=True)
                 gc.collect()  # Clear cache of unreference memeory
+        stormsdf = stormsdf.drop_duplicates(subset='stormid', keep='first',
+                                            inplace=False).reset_index(drop=True)
         self.stormsdf.to_csv(self.idstring + 'storms_over_box_area' + str(self.size)
                              + '_lons_' + str(self.x1) + '_' + str(self.x2) +
                              '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')

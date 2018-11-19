@@ -31,33 +31,11 @@ import pandas as pd
 from tqdm import tqdm
 import meteocalc
 from skewt import SkewT as sk
+from cube_funcs import cube99, genslice, cubemean
 
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
-
-
-# Stand alone methods
-@autojit
-def cubemean(var):
-    '''Description:
-        Find the mean of an iris cube variable
-       Attributes:
-        var: iris cube variable
-    '''
-    return var.collapsed(['latitude', 'longitude'], iris.analysis.MEAN)
-
-
-@autojit
-def cube99(var, per=99):
-    '''Description:
-        Find the Nth PERCENTILE of an iris cube variable
-       Attributes:
-        var: iris cube variable
-        p(int): PERCENTILE normally 1 or 99
-    '''
-    return var.collapsed(['latitude', 'longitude'], iris.analysis.PERCENTILE,
-                         percent=per).data
 
 
 class dm_functions(object):
@@ -495,41 +473,3 @@ class dm_functions(object):
         if TEPHI == 'Y':
             self.tephidf.to_csv(csvroot+'_tephi.csv')
         return
-
-
-def genslice(latlons, n1=None, n2=None):
-    '''Description:
-        Extrac iris cube slices of a variable
-       Attributes:
-        llon: lower longitude
-        llat: lower latitude
-        ulat: upper latitude
-        ulon: upper longitude
-        n1: pressure low
-        n2: pressure high
-    '''
-    llon, llat, ulat, ulon = latlons
-    if n1 is None and n2 is None:
-        xysmallslice = iris.Constraint(longitude=lambda cell: float(llon)
-                                       <= cell <= float(ulon),
-                                       latitude=lambda cell: float(llat) <=
-                                       cell <= float(ulat))
-    elif n1 is not None and n2 is None:
-        xysmallslice = iris.Constraint(pressure=lambda cell: n1 ==
-                                       cell, longitude=lambda cell:
-                                       float(llon) <= cell <= float(ulon),
-                                       latitude=lambda cell: float(llat)
-                                       <= cell <= float(ulat))
-    elif n1 == 500 and n2 == 800:
-        xysmallslice = iris.Constraint(pressure=lambda cell: n1 <= cell <=
-                                       n2 or cell == 60, longitude=lambda cell:
-                                       float(llon) <= cell <= float(ulon),
-                                       latitude=lambda cell: float(llat) <=
-                                       cell <= float(ulat))
-    else:
-        xysmallslice = iris.Constraint(pressure=lambda cell: n1 >=
-                                       cell >= n2, longitude=lambda cell:
-                                       float(llon) <= cell <= float(ulon),
-                                       latitude=lambda cell: float(llat) <=
-                                       cell <= float(ulat))
-    return xysmallslice
