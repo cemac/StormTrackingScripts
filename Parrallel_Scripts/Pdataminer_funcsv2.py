@@ -27,7 +27,6 @@ import warnings
 import types
 import pandas as pd
 import numpy as np
-from numba import autojit
 from numpy import genfromtxt as gent
 import iris
 import meteocalc
@@ -62,7 +61,6 @@ class dm_functions(object):
         self.evemid = [11, 17]
         self.allvars = pd.read_csv('all_vars_template.csv')
 
-    @autojit
     def gen_storms_to_keep(self, altcsvname):
         """Generate storms to keep csvs
         Attributes:
@@ -115,7 +113,6 @@ class dm_functions(object):
                 pass
         return df
 
-    @autojit
     def mean99(self, var, strings, idx, p=99):
         '''Description:
             Find the mean for the midday slice and the Nth PERCENTILE of an
@@ -140,7 +137,6 @@ class dm_functions(object):
                 self.allvars[strmean].loc[idx] = varmean
                 self.allvars[str99p].loc[idx] = var99p
 
-    @autojit
     def calc_t15(self, t15f, xy, idx):
         '''Description: mean99 for T15 variable
             Attributes:
@@ -151,7 +147,6 @@ class dm_functions(object):
         strings = ['mean_T15_1200', 'mean_T15_1800', '1perc_T15_1800']
         self.mean99(t15, strings, idx, p=1)
 
-    @autojit
     def calc_mslp(self, fname, xy, idx):
         '''Description:
         Find the mean of an iris cube variable
@@ -163,7 +158,6 @@ class dm_functions(object):
         strings = ['midday_mslp', 'eve_mslp_mean', 'eve_mslp_1p']
         self.mean99(allvari, strings, idx)
 
-    @autojit
     def calc_winds(self, u, v, idx):
         '''Description: Calculate winds for eveing and midday using u and v.
            Attributes:
@@ -188,7 +182,6 @@ class dm_functions(object):
                     self.allvars['eve_wind3_mean'].loc[idx] = mwind2
                     self.allvars['eve_wind3_99p'].loc[idx] = mwind1p
 
-    @autojit
     def calc_tow(self, of, Tf, xy600, idx):
         '''Description: Calculate bouyancy, omega and max for eveing midday etc
             Attributes:
@@ -262,7 +255,6 @@ class dm_functions(object):
                     maxcheck = shearval
         self.allvars['hor_shear'].loc[idx] = maxcheck
 
-    @autojit
     def calc_mass(self, wetf, dryf, xy, idx):
         '''Description:
             Calculate midday and eveing mass
@@ -386,9 +378,7 @@ class dm_functions(object):
         Generate variable csv files to show information about the storm
         csv root = file pattern for file to be Written
         '''
-        # tqdm is a progress wrapper
-        for row in tqdm(stormsdf.itertuples(), total=len(stormsdf),
-                        unit="storm"):
+        for row in stormsdf.itertuples():
             storminfo = (str(int(row.year)) + str(int(row.month)).zfill(2) +
                          str(int(row.day)).zfill(2))
             idx = row[0]
@@ -476,7 +466,6 @@ class dm_functions(object):
         pstorms.to_csv(csvroot+'_standard.csv', sep=',')
 
 
-@autojit
 def vels(flist, xy):
     uf = flist[flist.varname == 'u10'].file
     u = iris.load_cube(uf, xy)
@@ -485,7 +474,6 @@ def vels(flist, xy):
     return u, v
 
 
-@autojit
 def olrs(flist, xy):
     olr_f = flist[flist.varname == 'olr'].file
     OLR = iris.load_cube(olr_f).extract(xy)
@@ -495,7 +483,6 @@ def olrs(flist, xy):
     return olr_10p, olr_1p
 
 
-@autojit
 def colws(flist, xy):
     colwf = flist[flist.varname == 'col_w'].file
     colw = iris.load_cube(colwf).extract(xy)
@@ -504,8 +491,6 @@ def colws(flist, xy):
     varn99p = cube99(varn)
     return varn99p, varmean
 
-
-@autojit
 def precips(flist, xy):
     precipfile = flist[flist.varname == 'precip'].file
     precip = iris.load_cube(precipfile).extract(xy)

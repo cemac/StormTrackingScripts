@@ -24,17 +24,15 @@ Attributes:
 
 
 import glob
-from tqdm import tqdm
-import multiprocessing
 import copy_reg as copyreg
-import pandas as pd
-import numpy as np
 import warnings
 import sys
-from numba import autojit
 import types
+import gc
 import iris
 import Pfuncts
+import pandas as pd
+import numpy as np
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
@@ -42,7 +40,7 @@ if not sys.warnoptions:
 copyreg.pickle(types.MethodType, Pfuncts._pickle_method)
 
 
-class storminbox(object):
+class StormInBox(object):
     '''Description
        Stage 1: currently a suit of functions for finding information on
        storms in region and Generating cvs files of that information.
@@ -56,7 +54,7 @@ class storminbox(object):
     '''
     def __init__(self, x1, x2, y1, y2, size_of_storm, idstring, run='cc', root=None):
 
-        self.size_of_storm = size_of_storm
+        self.size = size_of_storm
         self.x1 = x1
         self.x2 = x2
         self.y1 = y1
@@ -125,7 +123,7 @@ class storminbox(object):
         for row in df.itertuples():
             cfile = row.file  # current file
             # read in whole csv
-            allvars = pd.read_csv(cfile, names=cols,  header=None,
+            allvars = pd.read_csv(cfile, names=self.cols, header=None,
                                   delim_whitespace=True)
             # the txt files have stoms and then child cells with
             # surplus info select parent storms
@@ -139,17 +137,18 @@ class storminbox(object):
             # [minlatix, minlonix, nlats, nlons]
             # llat, llon, ulat, ulon
             storms[['llat', 'llon', 'nlat', 'nlon']] = storms['box'].str.split(',', expand=True)
-            storms.llon = self.lon[np.array([pd.to_numeric(storms.llon)
-                                            - 1]).astype(int)][0]
             llats = storms.llat.str[4::]
+            llons = storms.llon
+            storms.llon = self.lon[np.array([pd.to_numeric(storms.llon)
+                                                 - 1]).astype(int)][0]
             storms.llat = self.lat[np.array([pd.to_numeric(llats)
-                                            - 1]).astype(int)][0]
-            storms.nlon = self.lon[np.array([pd.to_numeric(storms.nlon) -
-                                             1]).astype(int)][0]
-            storms.nlat = self.lat[np.array([pd.to_numeric(storms.nlat) -
-                                             1]).astype(int)][0]
-            storms['centlon'] = (storms.nlon + storms.llon) / 2.0
-            storms['centlat'] = (storms.nlat + storms.llat) / 2.0
+                                                 - 1]).astype(int)][0]
+            storms['ulon'] = self.lon[np.array([pd.to_numeric(llons)
+                            + pd.to_numeric(storms.nlon) - 1]).astype(int)][0]
+            storms['ulat'] = self.lat[np.array([pd.to_numeric(llats) +
+                          pd.to_numeric(storms.nlat) - 1]).astype(int)][0]
+            storms['centlon'] = (storms.ulon + storms.ulon) / 2.0
+            storms['centlat'] = (storms.ulat + storms.ulat) / 2.0
             storms = storms[self.x1 <= storms.centlon]
             storms = storms[storms.centlon <= self.x2]
             storms = storms[self.y1 <= storms.centlat]
@@ -165,8 +164,8 @@ class storminbox(object):
             stormsdf2.stormid = storms.no
             stormsdf2.llon = storms.llon
             stormsdf2.llat = storms.llat
-            stormsdf2.ulon = storms.nlon
-            stormsdf2.ulat = storms.nlat
+            stormsdf2.ulon = storms.ulon
+            stormsdf2.ulat = storms.ulat
             stormsdf2.centlon = storms.centlon
             stormsdf2.centlat = storms.centlat
             datestamp = pd.to_datetime(cfile[86:98])
@@ -207,6 +206,6 @@ class storminbox(object):
         df = self.create_dataframe()
         pstorms = Pfuncts.parallelize_dataframe(df, self.find_the_storms, nice)
         pstorms.to_csv(self.idstring + 'storms_over_box_area' +
-                       str(self.size_of_storm)
+                       str(self.size)
                        + '_lons_' + str(self.x1) + '_' + str(self.x2) +
                        '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')

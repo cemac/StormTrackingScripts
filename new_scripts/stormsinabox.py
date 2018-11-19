@@ -23,13 +23,12 @@ Attributes:
 
 import sys
 import glob
-import iris
+import gc
 import pandas as pd
 import numpy as np
-import gc
+import iris
 
-
-class storminbox(object):
+class StormInBox(object):
     '''Description
        Stage 1: currently a suit of functions for finding information on
        storms in region and Generating cvs files of that information.
@@ -86,7 +85,7 @@ class storminbox(object):
             if rw[90:92] in [str(x).zfill(2) for x in range(4, 7)]:
                 cfile = rw
                 # read in whole csv
-                allvars = pd.read_csv(cfile, names=cols,  header=None,
+                allvars = pd.read_csv(cfile, names=cols, header=None,
                                       delim_whitespace=True)
                 # the txt files have stoms and then child cells with
                 # surplus info select parent storms
@@ -100,17 +99,18 @@ class storminbox(object):
                 # [minlatix, minlonix, nlats, nlons]
                 # llat, llon, ulat, ulon
                 storms[['llat', 'llon', 'nlat', 'nlon']] = storms['box'].str.split(',', expand=True)
-                storms.llon = self.lon[np.array([pd.to_numeric(storms.llon)
-                                                - 1]).astype(int)][0]
                 llats = storms.llat.str[4::]
+                llons = storms.llon
+                storms.llon = self.lon[np.array([pd.to_numeric(storms.llon)
+                                                 - 1]).astype(int)][0]
                 storms.llat = self.lat[np.array([pd.to_numeric(llats)
-                                                - 1]).astype(int)][0]
-                storms.nlon = self.lon[np.array([pd.to_numeric(storms.nlon) -
-                                                 1]).astype(int)][0]
-                storms.nlat = self.lat[np.array([pd.to_numeric(storms.nlat) -
-                                                 1]).astype(int)][0]
-                storms['centlon'] = (storms.nlon + storms.llon) / 2.0
-                storms['centlat'] = (storms.nlat + storms.llat) / 2.0
+                                                 - 1]).astype(int)][0]
+                storms['ulon'] = self.lon[np.array([pd.to_numeric(llons)
+                            + pd.to_numeric(storms.nlon) - 1]).astype(int)][0]
+                storms['ulat'] = self.lat[np.array([pd.to_numeric(llats) +
+                          pd.to_numeric(storms.nlat) - 1]).astype(int)][0]
+                storms['centlon'] = (storms.ulon + storms.llon) / 2.0
+                storms['centlat'] = (storms.ulat + storms.llat) / 2.0
                 storms = storms[self.x1 <= storms.centlon]
                 storms = storms[storms.centlon <= self.x2]
                 storms = storms[self.y1 <= storms.centlat]
@@ -132,13 +132,13 @@ class storminbox(object):
                 stormsdf2.area = storms.area
                 stormsdf2.llon = storms.llon
                 stormsdf2.llat = storms.llat
-                stormsdf2.ulon = storms.nlon
-                stormsdf2.ulat = storms.nlat
+                stormsdf2.ulon = storms.ulon
+                stormsdf2.ulat = storms.ulat
                 stormsdf2.centlon = storms.centlon
                 stormsdf2.centlat = storms.centlat
                 stormsdf2.mean_olr = storms['mean'].str[5::]
                 self.stormsdf = pd.concat([self.stormsdf, stormsdf2]).reset_index(drop=True)
                 gc.collect()  # Clear cache of unreference memeory
         self.stormsdf.to_csv(self.idstring + 'storms_over_box_area' + str(self.size)
-                        + '_lons_' + str(self.x1) + '_' + str(self.x2) +
-                        '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')
+                             + '_lons_' + str(self.x1) + '_' + str(self.x2) +
+                             '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')

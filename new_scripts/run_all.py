@@ -1,17 +1,19 @@
 import stormsinabox
 from os.path import expanduser
 import numpy as np
-from dataminer_functions import dm_functions
+#from dataminer_functions import dm_functions
 import pandas as pd
 import time
 
 start_time = time.time()
 x1, x2 = [345, 375]
 y1, y2 = [10, 18]
-idstring = 'fctest'
+idstring = 'novtest'
 size_of_storm = 5000
-c = stormsinabox.storminbox(x1, x2, y1, y2, size_of_storm, idstring)
+c = stormsinabox.StormInBox(x1, x2, y1, y2, size_of_storm, idstring)
+c.stormsinthebox()
 print("--- %s seconds ---" % (time.time() - start_time))
+"""
 start_time1 = time.time()
 fcorcc = 0
 csvroot = ('testfc', ' testcc')
@@ -35,3 +37,4 @@ except IOError:
 dmf.gen_var_csvs(csvroot[fcorcc], storms_to_keep, CAPE='Y', TEPHI='Y')
 print("--- %s seconds ---" % (time.time() - start_time1))
 print("--- %s seconds ---" % (time.time() - start_time))
+"""
