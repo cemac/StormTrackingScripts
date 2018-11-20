@@ -1,10 +1,8 @@
-import pstromsinabox
 from os.path import expanduser
 import numpy as np
 import time
-from numpy import genfromtxt as gent
-from Pdataminer_funcsv2 import dm_functions
 import pandas as pd
+import StormScriptsPy3 as SSP3
 
 #start_time = time.time()
 x1, x2 = [345, 375]
@@ -19,16 +17,9 @@ fcorcc = 0
 csvroot = ('ptestfc', ' ptestcc')
 dataroot = ('/nfs/a299/IMPALA/data/fc/4km/', '/nfs/a277/IMPALA/data/4km/')
 stormhome = expanduser("~")+'/AMMA2050/Parrallel_Scripts'
-run = ('fc_storms_over_box_area', 'fc_storms_to_keep_area_',
-       'cc_storms_to_keep_area_')
-csvname = (stormhome + '/' + idstring + 'storms_over_box_area' + str(size_of_storm) +
-           '_lons_' + str(x1) + '_' + str(x2) + '_lat_' + str(y1) + '_' +
-           str(y2) + '.csv')
+csvname = stormhome+'/1000storms_over_box_area5000_lons_345_375_lat_10_18.csv'
 # Generating file list
-dmf = dm_functions(dataroot[fcorcc], CAPE='Y', TEPHI='Y')
-varlist = ['year', 'month', 'day', 'hour', 'llon', 'ulon', 'llat',
-           'ulat', 'stormid', 'mean_olr']
+dmf = SSP3.dm_functions(dataroot[1], CAPE='Y', TEPHI='Y')
 storms_to_keep = pd.read_csv(csvname, sep=',')
 dmf.genvarscsv(csvroot[fcorcc], storms_to_keep)
 print("--- %s seconds ---" % (time.time() - start_time1))
-print("--- %s seconds ---" % (time.time() - start_time))

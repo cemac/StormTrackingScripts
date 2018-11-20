@@ -28,20 +28,19 @@ import types
 import pandas as pd
 import numpy as np
 from numba import autojit
-from numpy import genfromtxt as gent
 import iris
 import meteocalc
 from skewt import SkewT as sk
 from tqdm import tqdm
-import Pfuncts
-from Pfuncts import genslice, cube99, cubemean
+from StormScriptsPy3.Pfuncts import *
+import StormScriptsPy3.Pfuncts as Pf
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
-copyreg.pickle(types.MethodType, Pfuncts._pickle_method)
+copyreg.pickle(types.MethodType, Pf._pickle_method)
 
 
-class dm_functions(object):
+class dm_functions():
     '''Description:
             A suite of functions to Calculate a standard set of variables
             for specified storms.
@@ -62,34 +61,6 @@ class dm_functions(object):
         self.evemid = [11, 17]
         self.allvars = pd.read_csv('all_vars_template.csv')
 
-    @autojit
-    def gen_storms_to_keep(self, altcsvname):
-        """Generate storms to keep csvs
-        Attributes:
-            altcsvname (str): csv.
-        Returns: storms to keep
-        """
-        dates = gent(altcsvname, delimiter=',', names=[self.varlistex])
-        dates = np.sort(dates[:], axis=-1, order=['stormid', 'mean_olr'])
-        storms_to_keep = np.zeros((1, 10), float)
-        for line in dates:
-            strm = line['stormid']
-            goodup = 0
-            for rw in range(0, storms_to_keep.shape[0]):
-                if int(strm) == int(storms_to_keep[rw, 8]):
-                    goodup += 1
-                    continue
-            if goodup < 1 and int(line['hour']) == 18:
-                if np.sum(storms_to_keep[0, :]) == 0:
-                    storms_to_keep[0, :] = line[self.varlist]
-                else:
-                    temp = np.zeros((1, 10), float)
-                    temp[0, :] = line[self.varlist]
-                    storms_to_keep = np.concatenate((storms_to_keep, temp),
-                                                    axis=0)
-        # wirte out a csv file?
-        return storms_to_keep
-
     def gen_flist(self, storminfo, varnames, varcodes=None):
         """Generate filelist
         Attributes:
@@ -105,7 +76,7 @@ class dm_functions(object):
             ds = pd.Series(os.listdir(self.dataroot))
             foldername = ds[ds.str.len() == 6].reset_index(drop=True)
         df = pd.DataFrame(columns=['file', 'codes', 'varname'])
-        for i in range(0, len(foldername)):
+        for i, item in enumerate(foldername):
             try:
                 df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
                                        + '/' + str(foldername[i]) + '*_' +
@@ -347,6 +318,7 @@ class dm_functions(object):
                     RH_650[p] = ([(0.263 * hum[p] * P[p]) /
                                   2.714**((17.67*(Tkel[p])) /
                                   (T[p] - 29.65))])
+
                 humity[p] = ((0.263 * hum[p] * P[p]) /
                              2.714**((17.67*(Tkel[p]))/(T[p] - 29.65)))
                 try:
@@ -462,7 +434,7 @@ class dm_functions(object):
             nice = 4
 
         if nice == 2 and shared == 'Y':
-            ans = Pfuncts.yes_or_no(('***WARNING***: You are asking to use '
+            ans = yes_or_no(('***WARNING***: You are asking to use '
                                      'half a shared computer \n consider fair '
                                      'use of shared resources, do you wish to '
                                      'continue? \n Y or N'))
@@ -472,45 +444,5 @@ class dm_functions(object):
                       'again...')
                 return
         df = storms_to_keep
-        pstorms = Pfuncts.parallelize_dataframe(df, self.gen_vars, nice)
+        pstorms = parallelize_dataframe(df, self.gen_vars, nice)
         pstorms.to_csv(csvroot+'_standard.csv', sep=',')
-
-
-@autojit
-def vels(flist, xy):
-    uf = flist[flist.varname == 'u10'].file
-    u = iris.load_cube(uf, xy)
-    vf = flist[flist.varname == 'v10'].file
-    v = iris.load_cube(vf, xy)
-    return u, v
-
-
-@autojit
-def olrs(flist, xy):
-    olr_f = flist[flist.varname == 'olr'].file
-    OLR = iris.load_cube(olr_f).extract(xy)
-    OLR = OLR[17, :, :]
-    olr_10p = cube99(OLR, per=10)
-    olr_1p = cube99(OLR, per=1)
-    return olr_10p, olr_1p
-
-
-@autojit
-def colws(flist, xy):
-    colwf = flist[flist.varname == 'col_w'].file
-    colw = iris.load_cube(colwf).extract(xy)
-    varn = colw[5, :, :, :]
-    varmean = cubemean(varn).data
-    varn99p = cube99(varn)
-    return varn99p, varmean
-
-
-@autojit
-def precips(flist, xy):
-    precipfile = flist[flist.varname == 'precip'].file
-    precip = iris.load_cube(precipfile).extract(xy)
-    precipm = precip[11:15, :, :]
-    precip = precip[17, :, :]
-    precip99 = cube99(precip)
-    precip = np.ndarray.tolist(precip99)
-    return precipm, precip99, precip

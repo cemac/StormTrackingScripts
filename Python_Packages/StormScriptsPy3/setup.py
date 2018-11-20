@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='StormScriptsSerial',
+    name='StormScriptsPy3',
     version='2.0.0',
     description=('Python3 Paralell Storm Data Scripts for retrieving data on' +
                  'storms in a set region and plotting various stats'),

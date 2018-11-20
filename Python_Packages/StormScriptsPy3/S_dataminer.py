@@ -22,26 +22,24 @@ Attributes:
 import glob
 import sys
 import os
-import copy_reg as copyreg
+import copyreg
 import warnings
 import types
-import gc
 import pandas as pd
 import numpy as np
-from numpy import genfromtxt as gent
 import iris
 import meteocalc
 from skewt import SkewT as sk
 from tqdm import tqdm
-import Pfuncts
-from Pfuncts import *
+from StormScriptsPy3.Pfuncts import *
+import StormScriptsPy3.Pfuncts as Pf
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
-copyreg.pickle(types.MethodType, Pfuncts._pickle_method)
+copyreg.pickle(types.MethodType, Pf._pickle_method)
 
 
-class dm_functions(object):
+class dm_functions():
     '''Description:
             A suite of functions to Calculate a standard set of variables
             for specified storms.
@@ -58,9 +56,10 @@ class dm_functions(object):
         self.varlistex = ['stormid', 'year', 'month', 'day', 'hour', 'llon',
                           'ulon', 'llat', 'ulat', 'centlon', 'centlat', 'area',
                           'mean_olr']
-        self.vars = pd.read_csv('vars.csv')
+        self.vars = pd.read_csv('data/stash_vars.csv')
+        self.novars = len(self.vars)
         self.evemid = [11, 17]
-        self.allvars = pd.read_csv('all_vars_template.csv')
+        self.allvars = pd.read_csv('data/all_vars_template.csv')
 
     def gen_flist(self, storminfo, varnames, varcodes=None):
         """Generate filelist
@@ -77,7 +76,7 @@ class dm_functions(object):
             ds = pd.Series(os.listdir(self.dataroot))
             foldername = ds[ds.str.len() == 6].reset_index(drop=True)
         df = pd.DataFrame(columns=['file', 'codes', 'varname'])
-        for i in range(0, len(foldername)):
+        for i in range(self.novars):
             try:
                 df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
                                        + '/' + str(foldername[i]) + '*_' +
@@ -312,7 +311,8 @@ class dm_functions(object):
                 if 710. >= P[p] > 690.:
                     RH_650[p] = ([(0.263 * hum[p] * P[p]) /
                                   2.714**((17.67*(Tkel[p])) /
-                                          (T[p] - 29.65))])
+                                  (T[p] - 29.65))])
+
                 humity[p] = ((0.263 * hum[p] * P[p]) /
                              2.714**((17.67*(Tkel[p]))/(T[p] - 29.65)))
                 try:
@@ -338,18 +338,9 @@ class dm_functions(object):
         mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
                           (height[::-1], pressures[::-1], T.data[::-1],
                            dwpt[:: -1])))
-        try:
-            S = sk.Sounding(soundingdata=mydata)
-            parcel = S.get_parcel('mu')
-            P_lcl, P_lfc, P_el, CAPE, CIN = S.get_cape(*parcel)
-        except AssertionError:
-            print('dew_point = ', dwpt[:: -1])
-            print('height = ', height[:: -1])
-            print('pressures = ', pressures[:: -1])
-            print('Temp = ', T.data[:: -1])
-            print('AssertionError: Use a monotonically increasing abscissa')
-            print('Setting to np.nan')
-            P_lcl, P_lfc, P_el, CAPE, CIN = np.nan
+        S = sk.Sounding(soundingdata=mydata)
+        parcel = S.get_parcel('mu')
+        P_lcl, P_lfc, P_el, CAPE, CIN = S.get_cape(*parcel)
         self.allvars['CAPE_P_lcl'].loc[idx] = P_lcl
         self.allvars['CAPE_P_lfc'].loc[idx] = P_lfc
         self.allvars['CAPE_P_el'].loc[idx] = P_el
@@ -361,9 +352,11 @@ class dm_functions(object):
         Generate variable csv files to show information about the storm
         csv root = file pattern for file to be Written
         '''
-        for row in stormsdf.itertuples():
-            storminfo = (str(row.year) + str(row.month).zfill(2) +
-                         str(row.day).zfill(2))
+        # tqdm is a progress wrapper
+        for row in tqdm(stormsdf.itertuples(), total=len(stormsdf),
+                        unit="storm"):
+            storminfo = (str(int(row.year)) + str(int(row.month)).zfill(2) +
+                         str(int(row.day)).zfill(2))
             idx = row[0]
             # If any files with structure exsit
             flist = self.gen_flist(storminfo, self.vars['varname'],
@@ -416,8 +409,6 @@ class dm_functions(object):
                 qf = flist[flist.varname == 'Q'].file
                 fnamelist = [qf, q15f, Tf, t15f]
                 self.calc_cape(fnamelist, u, v, precip99, xy, idx, latlons)
-            gc.collect()  # Clear cache of unreference memeory
-        print(len(self.allvars))
         return self.allvars
 
     def genvarscsv(self, csvroot, storms_to_keep, nice=4, shared='Y'):
@@ -437,15 +428,15 @@ class dm_functions(object):
             nice = 4
 
         if nice == 2 and shared == 'Y':
-            ans = Pfuncts.yes_or_no(('***WARNING***: You are asking to use '
-                                     'half a shared computer \n consider fair '
-                                     'use of shared resources, do you wish to '
-                                     'continue? \n Y or N'))
+            ans = yes_or_no(('***WARNING***: You are asking to use '
+                             'half a shared computer \n consider fair '
+                             'use of shared resources, do you wish to '
+                             'continue? \n Y or N'))
 
             if not ans:
                 print('Please revise nice number to higher value and try '
                       'again...')
                 return
         df = storms_to_keep
-        pstorms = Pfuncts.parallelize_dataframe(df, self.gen_vars, nice)
+        pstorms = parallelize_dataframe(df, self.gen_vars, nice)
         pstorms.to_csv(csvroot+'_standard.csv', sep=',')
