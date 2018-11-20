@@ -25,6 +25,7 @@ import os
 import copy_reg as copyreg
 import warnings
 import types
+import gc
 import pandas as pd
 import numpy as np
 from numpy import genfromtxt as gent
@@ -364,9 +365,18 @@ class dm_functions(object):
         mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
                           (height[::-1], pressures[::-1], T.data[::-1],
                            dwpt[:: -1])))
-        S = sk.Sounding(soundingdata=mydata)
-        parcel = S.get_parcel('mu')
-        P_lcl, P_lfc, P_el, CAPE, CIN = S.get_cape(*parcel)
+        try:
+            S = sk.Sounding(soundingdata=mydata)
+            parcel = S.get_parcel('mu')
+            P_lcl, P_lfc, P_el, CAPE, CIN = S.get_cape(*parcel)
+        except AssertionError:
+            print('dew_point = ', dwpt[:: -1])
+            print('height = ', height[:: -1])
+            print('pressures = ', pressures[:: -1])
+            print('Temp = ', T.data[:: -1])
+            print('AssertionError: Use a monotonically increasing abscissa')
+            print('Setting to np.nan')
+            P_lcl, P_lfc, P_el, CAPE, CIN = np.nan
         self.allvars['CAPE_P_lcl'].loc[idx] = P_lcl
         self.allvars['CAPE_P_lfc'].loc[idx] = P_lfc
         self.allvars['CAPE_P_el'].loc[idx] = P_el
@@ -433,6 +443,7 @@ class dm_functions(object):
                 qf = flist[flist.varname == 'Q'].file
                 fnamelist = [qf, q15f, Tf, t15f]
                 self.calc_cape(fnamelist, u, v, precip99, xy, idx, latlons)
+            gc.collect()  # Clear cache of unreference memeory
         return self.allvars
 
     def genvarscsv(self, csvroot, storms_to_keep, nice=4, shared='Y'):
