@@ -29,6 +29,7 @@ import pandas as pd
 import numpy as np
 import iris
 import meteocalc
+import gc
 from skewt import SkewT as sk
 from tqdm import tqdm
 from StormScriptsPy3.Pfuncts import *
@@ -366,15 +367,15 @@ class dm_functions():
                 continue
             latlons = [row.llon, row.llat, row.ulat, row.ulon]
             xy = genslice(latlons)
-            xyhi = genslice(latlons, n1=500, n2=800)
-            xylw = genslice(latlons, n1=925, n2=800)
-            xy600 = genslice(latlons, n1=600, n2=300)
             # Find if precip is meets criteria
             precipm, precip99, precip = precips(flist, xy)
             precipm = precipm.collapsed(['time', 'latitude', 'longitude'],
                                         iris.analysis.MEAN).data
             if precipm >= 0.1/3600. and precip <= 1.0/3600.:
                 continue
+            xyhi = genslice(latlons, n1=500, n2=800)
+            xylw = genslice(latlons, n1=925, n2=800)
+            xy600 = genslice(latlons, n1=600, n2=300)
             # Initialise row
             self.allvars.loc[idx] = 0
             self.allvars['storms_to_keep'].loc[idx] = row.stormid
@@ -409,6 +410,7 @@ class dm_functions():
                 qf = flist[flist.varname == 'Q'].file
                 fnamelist = [qf, q15f, Tf, t15f]
                 self.calc_cape(fnamelist, u, v, precip99, xy, idx, latlons)
+            gc.collect()
         return self.allvars
 
     def genvarscsv(self, csvroot, storms_to_keep, nice=4, shared='Y'):

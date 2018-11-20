@@ -20,5 +20,6 @@ setup(
     author='University of Leeds',
     author_email='h.l.burns@leeds.ac.uk',
     keywords=['Storms'],
-    url='https://github.com/cemac/StormTrackingScripts'
+    url='https://github.com/cemac/StormTrackingScripts',
+    include_package_data=True
 )
