@@ -30,8 +30,8 @@ import numpy as np
 import iris
 import meteocalc
 import gc
+from numba import autojit
 from skewt import SkewT as sk
-from tqdm import tqdm
 from StormScriptsPy3.Pfuncts import *
 import StormScriptsPy3.Pfuncts as Pf
 
@@ -87,6 +87,7 @@ class dm_functions():
                 pass
         return df
 
+    @autojit
     def mean99(self, var, strings, idx, p=99):
         '''Description:
             Find the mean for the midday slice and the Nth PERCENTILE of an
@@ -111,6 +112,7 @@ class dm_functions():
                 self.allvars[strmean].loc[idx] = varmean
                 self.allvars[str99p].loc[idx] = var99p
 
+    @autojit
     def calc_t15(self, t15f, xy, idx):
         '''Description: mean99 for T15 variable
             Attributes:
@@ -121,6 +123,7 @@ class dm_functions():
         strings = ['mean_T15_1200', 'mean_T15_1800', '1perc_T15_1800']
         self.mean99(t15, strings, idx, p=1)
 
+    @autojit
     def calc_mslp(self, fname, xy, idx):
         '''Description:
         Find the mean of an iris cube variable
@@ -229,6 +232,7 @@ class dm_functions():
                     maxcheck = shearval
         self.allvars['hor_shear'].loc[idx] = maxcheck
 
+    @autojit
     def calc_mass(self, wetf, dryf, xy, idx):
         '''Description:
             Calculate midday and eveing mass
@@ -303,12 +307,13 @@ class dm_functions():
         pressures = Tcube.coord('pressure').points
         pressures = np.append(pressures, mslp)
         P = pressures * 100
-        height = np.zeros((len(pressures)))
-        dwpt = np.zeros((len(pressures)))
-        humity = np.zeros((len(pressures)))
-        RH_650 = np.zeros((len(pressures)))
-        if len(pressures) == 18:
-            for p in range(0, len(pressures)):
+        pnum = len(pressures)
+        height = np.zeros((pnum))
+        dwpt = np.zeros((pnum))
+        humity = np.zeros((pnum))
+        RH_650 = np.zeros((pnum))
+        if pnum == 18:
+            for p in range(0, pnum):
                 if 710. >= P[p] > 690.:
                     RH_650[p] = ([(0.263 * hum[p] * P[p]) /
                                   2.714**((17.67*(Tkel[p])) /
@@ -321,7 +326,7 @@ class dm_functions():
                                                   humidity=humity[p])
                 except ValueError:
                     dwpt[p] = np.nan
-                if p < len(pressures)-1:
+                if p < pnum-1:
                     height[p] = T[p]*((mslp*100/P[p])**(1./5.257) - 1)/0.0065
                 else:
                     height[p] = 1.5
@@ -354,8 +359,7 @@ class dm_functions():
         csv root = file pattern for file to be Written
         '''
         # tqdm is a progress wrapper
-        for row in tqdm(stormsdf.itertuples(), total=len(stormsdf),
-                        unit="storm"):
+        for row in stormsdf.itertuples():
             storminfo = (str(int(row.year)) + str(int(row.month)).zfill(2) +
                          str(int(row.day)).zfill(2))
             idx = row[0]
