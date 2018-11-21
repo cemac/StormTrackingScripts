@@ -30,7 +30,6 @@ import numpy as np
 import iris
 import meteocalc
 import gc
-from numba import autojit
 from skewt import SkewT as sk
 from StormScriptsPy3.Pfuncts import *
 import StormScriptsPy3.Pfuncts as Pf
@@ -87,7 +86,6 @@ class dm_functions():
                 pass
         return df
 
-    @autojit
     def mean99(self, var, strings, idx, p=99):
         '''Description:
             Find the mean for the midday slice and the Nth PERCENTILE of an
@@ -112,7 +110,6 @@ class dm_functions():
                 self.allvars[strmean].loc[idx] = varmean
                 self.allvars[str99p].loc[idx] = var99p
 
-    @autojit
     def calc_t15(self, t15f, xy, idx):
         '''Description: mean99 for T15 variable
             Attributes:
@@ -123,7 +120,6 @@ class dm_functions():
         strings = ['mean_T15_1200', 'mean_T15_1800', '1perc_T15_1800']
         self.mean99(t15, strings, idx, p=1)
 
-    @autojit
     def calc_mslp(self, fname, xy, idx):
         '''Description:
         Find the mean of an iris cube variable
@@ -232,7 +228,6 @@ class dm_functions():
                     maxcheck = shearval
         self.allvars['hor_shear'].loc[idx] = maxcheck
 
-    @autojit
     def calc_mass(self, wetf, dryf, xy, idx):
         '''Description:
             Calculate midday and eveing mass

@@ -23,7 +23,6 @@ import multiprocessing
 import pandas as pd
 import numpy as np
 import iris
-from numba import autojit
 
 
 def _pickle_method(m):
@@ -107,7 +106,6 @@ def genslice(latlons, n1=None, n2=None):
     return xysmallslice
 
 
-@autojit
 def cubemean(var):
     '''Description:
         Find the mean of an iris cube variable
@@ -117,7 +115,6 @@ def cubemean(var):
     return var.collapsed(['latitude', 'longitude'], iris.analysis.MEAN)
 
 
-@autojit
 def cube99(var, per=99):
     '''Description:
         Find the Nth PERCENTILE of an iris cube variable
@@ -129,7 +126,6 @@ def cube99(var, per=99):
                          percent=per).data
 
 
-@autojit
 def vels(flist, xy):
     uf = flist[flist.varname == 'u10'].file
     u = iris.load_cube(uf, xy)
@@ -138,7 +134,6 @@ def vels(flist, xy):
     return u, v
 
 
-@autojit
 def olrs(flist, xy):
     olr_f = flist[flist.varname == 'olr'].file
     OLR = iris.load_cube(olr_f).extract(xy)
@@ -148,7 +143,6 @@ def olrs(flist, xy):
     return olr_10p, olr_1p
 
 
-@autojit
 def colws(flist, xy):
     colwf = flist[flist.varname == 'col_w'].file
     colw = iris.load_cube(colwf).extract(xy)
@@ -158,7 +152,6 @@ def colws(flist, xy):
     return varn99p, varmean
 
 
-@autojit
 def precips(flist, xy):
     precipfile = flist[flist.varname == 'precip'].file
     precip = iris.load_cube(precipfile).extract(xy)
