@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Storm calculations
+"""Strom_calculations
 
 This module was developed by CEMAC as part of the AMAMA 2050 Project.
 This scripts build on Work done my Rory Fitzpatrick, taking the
@@ -18,17 +18,66 @@ Attributes:
 
 .. CEMAC_stomtracking:
    https://github.com/cemac/StormTrackingScripts
-right, so in this file we are setting up all the information needed
-for our CAPE calculations.
-Looking at the literature, we need pressure, temperature, dewpoint temperature,
-height, and specific  (g/kg) for all the intense storms. We will use the
-pressure values 850 hPa upwards in order to remove the issues with 925 hPa T
-values for some storms.
 """
 
 import pandas as pd
 import numpy as np
-import metpy.calc as metcalc
+import scipy.stats as stat
+
+
+def correls(var1, var2, labelstr):
+    correlfirst = stat.pearsonr(var1, var2)
+    ptest = correlfirst[1]
+    correlfirst_run = float("{0:.3f}".format(correlfirst[0]))
+    if ptest < 0.05:
+        plt.plot(np.unique(var1), np.poly1d(np.polyfit(var1, var2, 1))
+                 (np.unique(var1)), color='r', label=labelstr +
+                 str(correlfirst))
+    else:
+        plt.plot(np.unique(var1), np.poly1d(np.polyfit(var1, var2, 1))
+                 (np.unique(var1)), color='r', linestyle='--',
+                 label=labelstr + str(correlfirst))
+    return correlfirst_run
+
+
+def prepcorrel_panel_plot(panelno, figletter, var1c, var2c, var1f, var2f,
+                          xlabel, ylabel='99th percentile \n precipitation rate (mm/hr)',
+                          panels=[3, 4]):
+    plt.subplot(panels, panelno)
+    plt.ylabel(ylabel)
+    plt.scatter(var1c, var2c, c='r', marker='*', s=5)
+    plt.scatter(var1f, var2f, c='b', marker='v', s=5)
+    plt.xlabel(xlabel)
+    cc = correls(var1c, var2c, ' CC correl')
+    cc = correls(var1f, var2f, ' FC correl')
+    plt.title(figletter + 'CC correl = ' + str(cc) +
+              ', FC correl = ' + str(fc), loc='right', fontsize=8)
+
+    return
+
+
+def shear_pdfs(panelno, figlet, var1c, var1f, xlabel,
+               ylabel='Probaility density', panels=[3, 4]):
+    plt.subplot(panels, panelno)
+    mean_var1c = np.average(var2c)
+    mean_var1f = np.average(var2f)
+    correl = stat.ttest_ind(var2c, var2f, equal_var=False)
+    Sigval = 1.0 - correl[1]
+    Sigval = float("{0:.3f}".format(Sigval))
+    bins = np.linspace(np.min([np.min(var1f[:]), np.min(var1c[:])]),
+                       np.max([np.max(var1f[:]), np.max(var1c[:])]), 25)
+    plt.title(figlet + '- Confidence Interval = ' + str(Sigval), fontsize=10)
+    n, bins, patches = plt.hist(var1c[:], bins, normed=1, facecolor='g',
+                                label='mean = ' +
+                                str(float("{0:.2f}".format(mean_var1c))))
+    n, bins, patches = plt.hist(var1f[:], bins, normed=1, facecolor='b',
+                                alpha=0.5, label='mean = ' +
+                                str(float("{0:.2f}".format(mean_var1f))))
+    plt.scatter(mean_var1c, 0, c='g')
+    plt.scatter(mean_var1f, 0, c='b')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.legend(fontsize=8)
 
 
 class stormcalcs(object):
@@ -37,13 +86,99 @@ class stormcalcs(object):
        storms in region and Generating cvs files of that information.
 
     '''
-    def __init__(self, csvname, altcsvname=None):
+    def __init__(self, fc_csv, cc_csv):
 
-        fname = self.csvname
+        self.fcname = fc_csv
+        self.ccname = cc_csv
+
+    def createvars(csvname):
         df = pd.read_csv(csvname, sep=',')
-        cold = df.mean_T15_1800 - df.mean_T15_1200
-        mslp_diff = df.eve_mslp_mean - df.midday_mslp
-        u_diff_10m = df.eve_wind_99p - df.midday_wind
-        u3_diff_10m = df.eve_wind3_99p - df.midday_wind3
-        precip99 = df.precip_99th_perc*3600
-        precipvol = df.precip_accum*3600
+        # Remove duplicate storms
+        df = df.drop_duplicates(subset='storms_to_keep', keep='first')
+        # Manipulate varibales and add to dataframe
+        df['cold'] = df.mean_T15_1800 - df.mean_T15_1200
+        df['mslp_diff'] = df.eve_mslp_mean - df.midday_mslp
+        df['u_diff_10m'] = df.eve_wind_99p - df.midday_wind
+        df['u3_diff_10m'] = df.eve_wind3_99p - df.midday_wind3
+        df['precip99'] = df.precip_99th_perc * 3600
+        df['precipvol'] = df.precip_accum * 3600
+        df['shear_TCW_mid'] = df.hor_shear * df.mass_mean_1200
+        df['shear_TCW_eve'] = df.hor_shear * df.mass_mean_1800
+        df['triple_threat_mid'] = shear_TCW_mid * df.omega_1200_1p
+        df['triple_threat_eve'] = shear_TCW_eve * df.omega_1800_1p
+        df['TCW_omega_eve'] = df.mass_mean_1800 * df.omega_1800_1p
+        return [df]
+
+    def Rorys_Correl(self, csvnamefc, csvnamecc, figname):
+
+        df_fc = self.createvars(csvnamefc)
+        df_cc = self.createvars(csvnamecc)
+
+        panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+        figletter = ['a) ', 'b) ', 'c) ', 'd) ', 'e) ', 'f) ', 'g) ', 'h) ',
+                     'i) ', 'j) ', 'k) ']
+
+        xlab = ['1200 UTC wind shear magnitude (m/s)', '1800 UTC TCWV (kg/m2)',
+                '1800 UTC minimum omega (Pa/s)', '1200 UTC shear x 1800Z TCWV',
+                '1800 UTC TCWV x omega', '1800 UTC TCWV x omega x 1200 UTC shear',
+                '1800 UTC mean OLR (W/m2)', '1200 UTC mean MU-CAPE (J)',
+                '1800 UTC 1-hour total rainfall (kg)',
+                '1200 UTC mean 700 hPa RH (%)', 'Cold pool marker (K)']
+
+        var1c = [df_cc.hor_shear, df_cc.shear_TCW_eve, df_cc.omega_1800_1p,
+                 df_cc.shear_TCW_eve, df_cc.TCW_omega_eve,
+                 df_cc.triple_threat_eve, df_cc.OLRs, df_cc.CAPE_CAPE,
+                 df_cc.Tephi_RH650, df_cc.precipvol, df_cc.cold]
+
+        var1f = [df_fc.hor_shear, df_fc.shear_TCW_eve, df_fc.omega_1800_1p,
+                 df_fc.shear_TCW_eve, df_fc.TCW_omega_eve,
+                 df_fc.triple_threat_eve, df_fc.OLRs, df_fc.CAPE_CAPE,
+                 df_fc.Tephi_RH650, df_fc.precipvol, df_fc.cold - 0.514998]
+
+        var2f = df_fc.precip99
+        var2c = df_cc.precip99
+        for i in panelno:
+            prepcorrel_panel_plot(i, figletter[i], var1c[i], var2c, var1f[i],
+                                  var2f, xlab[i])
+        plt.tight_layout()
+        plt.savefig(figname + '_correlations.png')
+        plt.clf()
+
+    def Rorys_shear_pdf(self, csvnamefc, csvnamecc, figname):
+
+        df_fc = self.createvars(csvnamefc)
+        df_cc = self.createvars(csvnamecc)
+
+        panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+        figletter = ['a) ', 'b) ', 'c) ', 'd) ', 'e) ', 'f) ', 'g) ', 'h) ',
+                     'i) ', 'j) ', 'k) ']
+
+        xlab = ['1800 UTC 99p precipitation rate (mm/hr)',
+                '1200 UTC mean zonal \n wind shear (m/s)',
+                '1200 UTC mean wind \n shear magnitude (m/s)',
+                '1800 UTC mean Total Column \n Water Vapor (kg/m2)',
+                '1200 UTC mean MU-CAPE (J)', '1200 UTC mean MU-CIN (J)',
+                '1200 UTC mean 700 hPa RH (%)', '1800 UTC mean OLR (W/m2)',
+                '1800 UTC min omega (Pa/s)',
+                '1800 UTC 1-hour total rainfall (kg)',
+                "1800 UTC storm area ('000,000 km2)",
+                '1800 UTC cold pool marker (K)']
+
+        var1c = [df_cc.precip99, df_cc.max_shear, df_cc.hor_shear,
+                 df_cc.shear_TCW_eve, df_cc.CAPE_CAPE, df_cc.CAPE_CIN,
+                 df_cc.Tephi_RH650, df_cc.OLRs, df_cc.omega_1800_1p,
+                 df_cc.precipvol, df_cc.area*100*100/1000000, df_cc.cold]
+
+        var1f = [df_fc.precip99, df_fc.max_shear, df_fc.hor_shear,
+                 df_fc.shear_TCW_eve, df_fc.CAPE_CAPE, df_fc.CAPE_CIN,
+                 df_fc.Tephi_RH650, df_fc.OLRs, df_fc.omega_1800_1p,
+                 df_fc.precipvol, df_fc.area*100*100/1000000, df_fc.cold]
+
+        for i in panelno:
+            shear_pdfs(i, figletter[i], var1c[i], var1f[i], xlab[i])
+
+        plt.tight_layout()
+        plt.savefig(figname + '_PDF.png')
+        plt.clf()
