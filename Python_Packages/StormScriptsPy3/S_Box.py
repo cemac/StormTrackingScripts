@@ -52,7 +52,7 @@ class StormInBox():
         y2(int): latitude index North
         size_of_storm(int): size of storm in km e.g 5000
     '''
-    def __init__(self, x1, x2, y1, y2, size_of_storm, idstring, run='cc', root=None):
+    def __init__(self, x1, x2, y1, y2, size_of_storm, idstring, run='cc', root=None, stormhome='./'):
 
         self.size = size_of_storm
         self.x1, self.x2, self.y1, self.y2 = [x1, x2, y1, y2]
@@ -75,8 +75,12 @@ class StormInBox():
         elif run == 'fc':
             root = '/nfs/a299/IMPALA/data/fc/4km/'
         else:
-            sys.exit('Please specify data root eg. /nfs/a299/IMPALA/data/fc/4km/')
+            if root is None:
+                sys.exit('Please specify data root eg. /nfs/a299/IMPALA/data/fc/4km/')
         self.froot = root + 'precip_tracking_12km_hourly/'
+        self.H = stormhome
+        self.run = run
+
 
     def create_dataframe(self):
         """Description
@@ -89,18 +93,18 @@ class StormInBox():
        df(DataFrame): A data frame of storm file names
         """
         try:
-            df = pd.read_csv('filelist.csv', sep=',')
+            df = pd.read_csv(self.H + self.run + 'filelist.csv', sep=',')
             return df
         except IOError:
             df2 = pd.DataFrame(columns=['file'])
             i = 0
             for rw in glob.iglob(self.froot+'*/a04203*4km*0030-*2330*.txt'):
-                if rw.file[90:92] in [str(x).zfill(2) for x in range(self.m1, self.m2)]:
+                if rw[90:92] in [str(x).zfill(2) for x in range(self.m1, self.m2)]:
                     i += 1
                     df2.loc[i] = 0
                     df2['file'].loc[i] = rw
             df = df2.reset_index(drop=True)
-            df.to_csv('filelist.csv', sep=',')
+            df.to_csv(self.H + self.run + 'filelist.csv', sep=',')
         # Storms we want have this infor
         print('generated file list...')
         return df
@@ -205,6 +209,6 @@ class StormInBox():
         pstorms = Pfuncts.parallelize_dataframe(df, self.find_the_storms, nice)
         pstormsdf = pstorms.drop_duplicates(subset='stormid', keep='first',
                                             inplace=False).reset_index(drop=True)
-        pstormsdf.to_csv(self.idstring + 'storms_over_box_area' + str(self.size)
-                         + '_lons_' + str(self.x1) + '_' + str(self.x2) +
+        pstormsdf.to_csv(self.H + self.idstring + 'storms_over_box_area' +
+                         str(self.size) + '_lons_' + str(self.x1) + '_' + str(self.x2) +
                          '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')
