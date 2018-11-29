@@ -339,9 +339,18 @@ class dm_functions():
         mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
                           (height[::-1], pressures[::-1], T.data[::-1],
                            dwpt[:: -1])))
-        S = sk.Sounding(soundingdata=mydata)
-        parcel = S.get_parcel('mu')
-        P_lcl, P_lfc, P_el, CAPE, CIN = S.get_cape(*parcel)
+        try:
+            S = sk.Sounding(soundingdata=mydata)
+            parcel = S.get_parcel('mu')
+            P_lcl, P_lfc, P_el, CAPE, CIN = S.get_cape(*parcel)
+        except AssertionError:
+            print('dew_point = ', dwpt[:: -1])
+            print('height = ', height[:: -1])
+            print('pressures = ', pressures[:: -1])
+            print('Temp = ', T.data[:: -1])
+            print('AssertionError: Use a monotonically increasing abscissa')
+            print('Setting to np.nan')
+            P_lcl, P_lfc, P_el, CAPE, CIN = np.nan
         self.allvars['CAPE_P_lcl'].loc[idx] = P_lcl
         self.allvars['CAPE_P_lfc'].loc[idx] = P_lfc
         self.allvars['CAPE_P_el'].loc[idx] = P_el
