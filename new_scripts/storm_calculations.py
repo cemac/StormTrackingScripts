@@ -59,8 +59,8 @@ def correl_panel_plot(panelno, figletter, var1c, var2c, var1f, var2f,
 def shear_pdfs(panelno, figlet, var1c, var1f, xlabel,
                ylabel='Probaility density', panels=[3, 4]):
     plt.subplot(panels, panelno)
-    mean_var1c = np.average(var2c)
-    mean_var1f = np.average(var2f)
+    mean_var1c = np.average(var1c)
+    mean_var1f = np.average(var1f)
     correl = stat.ttest_ind(var2c, var2f, equal_var=False)
     Sigval = 1.0 - correl[1]
     Sigval = float("{0:.3f}".format(Sigval))
@@ -301,22 +301,85 @@ class stormcalcs(object):
         plt.xlabel(xlab)
         plt.ylabel(xlab)
         plt.title(figlet, x=0.01, fontsize=10)
+        return bc_hist
 
     def Rorys__hist(self, csvnamefc, csvnamecc, figname):
 
         df_fc = self.df_fc
         df_cc = self.df_cc
-        figletter = ['a) ', 'b) ',  'c) ', 'd) ']
-        xlab = ['1800 UTC minimum omega (Pa/s)', '1800 UTC minimum omega (Pa/s)']
-        ylab = ['1800 UTC TCW (kg/m2)', '1800 UTC cold pool marker (K)']
-        var1c = []
-        var1f = []all_cube_min_omega_1800_fc all_cube_min_omega_1800_fc all_cube_horizontal_shear_cc
-        var2c = []
-        var2f = []all_cube_TCW_1800_fc  all_cube_cold_pool_fc all_cube_10u_1800_cc
+        panelno = [1, 2, 3]
+        figletter = ['a) ', 'b) ', 'c) ']
+        xlab = ['1800 UTC minimum omega (Pa/s)', '1800 UTC minimum omega (Pa/s)',
+                '1200 UTC mean horizontal shear (m/s)']
+        ylab = ['1800 UTC TCW (kg/m2)', '1800 UTC cold pool marker (K)',
+                '1800 UTC 99th percentile \n 10-m wind speed (m/s)']
+        clab = ['both climates \n precip rate (mm/hr)',
+                'both climates \n precip rate (mm/hr)',
+                'both climates 1800 UTC \n min omega (Pa/s)']
+        var1c = [df_cc.omega_1800_1pc, df_cc.omega_1800_1pc, df_cc.hor_shear]
+        var1f = [df_cc.omega_1800_1pc, df_cc.omega_1800_1pc, df_cc.hor_shear]
+        var2c = [df_cc.shear_TCW_eve, df_cc.cold, df_cc.midday_wind]
+        var2f = [df_fc.shear_TCW_eve, df_fc.cold, df_cc.midday_wind]
 
         for i in panelno:
-            self.histograms(i, figletter[i], var1c[i], var2c, var1f[i],
-                            var2f, xlab[i], ylab[i])
+            bc_hist = self.histograms(i, figletter[i], var1c[i], var2c,
+                                      var1f[i], var2f, xlab[i], ylab[i])
         plt.tight_layout()
         plt.savefig(figname + '_histograms.png')
+        plt.clf()
+
+    def Rorys__coldpool(self, csvnamefc, csvnamecc, figname):
+        df_fc = self.df_fc
+        df_cc = self.df_cc
+        panelno = [1, 2]
+        figletter = ['a) ', 'b) ', 'c) ', 'd) ']
+        xlab = ['1800Z 1 perc T - 1200Z mean T (K)',
+                '1800Z 1 perc T - 1200Z mean T \n [CC Corected] (K)'
+                '1800Z 1 perc T - 1200Z mean T (K)']
+
+        ylab = ['99p precipitation (mm/hr)', '99p precipitation (mm/hr)'
+                'mean OLR (W/m2)', '99p precipitation (mm/hr)']
+
+        var1c = [df_cc.cold, df_cc.cold, df_cc.cold, df_cc.cold]
+        var1f = [df_cc.cold, df_cc.cold - 0.514998, df_cc.cold,
+                 df_cc.cold - 0.514998]
+        var2c = [df_cc.precip99, df_cc.precip99, df_cc.OLRs, df_cc.precip99]
+        var2f = [df_cf.precip99, df_cf.precip99, df_cf.OLRs, df_cf.precip99]
+
+        for i in panelno:
+            correl_panel_plot(i, figletter[i], var1c[i], var2c, var1f[i],
+                              var2f, xlab[i])
+        plt.tight_layout()
+        plt.savefig(figname + '_cold_correlations.png')
+        plt.clf()
+
+    def Rorys_pdfs(self, csvnamefc, csvnamecc, figname):
+
+        df_fc = self.df_fc
+        df_cc = self.df_cc
+
+        panelno = [1, 2, 3, 4]
+        figletter = ['a) ', 'b) ', 'c) ', 'd) ',  'e) ', 'f) ', 'g) ', 'h) ']
+
+        xlab = ['1800Z 1% 1.5-meter T \n - 1200Z mean 1.5-meter T (K)',
+                '1800Z 99th perc surface pressure \n - 1200Z mean surface pressure (hPa)'
+                '1800Z 99% 10-m wind speed \n - 1200Z mean 10-m wind speed (m/s)'
+                '1800Z mean 10-m w.s.c. \n - 1200Z mean 10-m w.s.c. (m3/s3)',
+                '1800Z 1% 1.5-meter \n Temperature (K)',
+                '1800Z 99th perc \n surface pressure (hPa)',
+                '1800Z 99% 10-meter \n wind speed (m/s)',
+                '1800Z mean 10-meter \n wind speed cubed [w.s.c.] (m3/s3)']
+
+        var1c = [df_cc.cold, (df_cc.mslp_dif + 0.11185)/100., df_cc.u_diff_10m,
+                 df_cc.u3_diff_10m, df_cc.mean_T15_1200 , all_cube_mslp_1800_cc/100.,  all_cube_10u_1800_cc,  all_cube_10u_cubed_1800_cc]
+
+        var1f = [df_cc.cold, df_fc.mslp_dif/100., df_fc.u_diff_10m + 0.38104,
+                df_fc.u3_diff_10m + 33.2881, all_cube_T15_1800_fc ,  all_cube_mslp_1800_fc/100.,  all_cube_10u_1800_fc,
+        all_cube_10u_cubed_1800_fc]
+
+        for i in panelno:
+            shear_pdfs(i, figletter[i], var1c[i], var1f[i], xlab[i], panels=[2, 4])
+
+        plt.tight_layout()
+        plt.savefig(figname + '_PDF.png')
         plt.clf()
