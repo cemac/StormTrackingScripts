@@ -40,16 +40,16 @@ def correls(var1, var2, labelstr):
     return correlfirst_run
 
 
-def prepcorrel_panel_plot(panelno, figletter, var1c, var2c, var1f, var2f,
-                          xlabel, ylabel='99th percentile \n precipitation rate (mm/hr)',
-                          panels=[3, 4]):
+def correl_panel_plot(panelno, figletter, var1c, var2c, var1f, var2f,
+                      xlabel, ylabel='99th percentile \n precipitation rate (mm/hr)',
+                      panels=[3, 4]):
     plt.subplot(panels, panelno)
     plt.ylabel(ylabel)
     plt.scatter(var1c, var2c, c='r', marker='*', s=5)
     plt.scatter(var1f, var2f, c='b', marker='v', s=5)
     plt.xlabel(xlabel)
     cc = correls(var1c, var2c, ' CC correl')
-    cc = correls(var1f, var2f, ' FC correl')
+    fc = correls(var1f, var2f, ' FC correl')
     plt.title(figletter + 'CC correl = ' + str(cc) +
               ', FC correl = ' + str(fc), loc='right', fontsize=8)
 
@@ -80,6 +80,44 @@ def shear_pdfs(panelno, figlet, var1c, var1f, xlabel,
     plt.legend(fontsize=8)
 
 
+def createvars(csvname):
+    df = pd.read_csv(csvname, sep=',')
+    # Remove duplicate storms
+    df = df.drop_duplicates(subset='storms_to_keep', keep='first')
+    # Manipulate varibales and add to dataframe
+    df['cold'] = df.mean_T15_1800 - df.mean_T15_1200
+    df['mslp_diff'] = df.eve_mslp_mean - df.midday_mslp
+    df['u_diff_10m'] = df.eve_wind_99p - df.midday_wind
+    df['u3_diff_10m'] = df.eve_wind3_99p - df.midday_wind3
+    df['precip99'] = df.precip_99th_perc * 3600
+    df['precipvol'] = df.precip_accum * 3600
+    df['shear_TCW_mid'] = df.hor_shear * df.mass_mean_1200
+    df['shear_TCW_eve'] = df.hor_shear * df.mass_mean_1800
+    df['triple_threat_mid'] = shear_TCW_mid * df.omega_1200_1p
+    df['triple_threat_eve'] = shear_TCW_eve * df.omega_1800_1p
+    df['TCW_omega_eve'] = df.mass_mean_1800 * df.omega_1800_1p
+    return [df]
+
+
+def bins(v1, v2):
+    vbin = np.linspace(np.min([np.min(v1), np.min(v2)]), np.max([np.max(v1),
+                       np.max(v2)]), 25)
+    return vbin
+
+
+def bothhists(bc_hist, var1, var2, varP, T_bins, o_bins):
+        for element in range(0, len(var1)):
+            OMEGA = var2[element]
+            TCW = var1[element]
+            for x in range(0, int(a) - 1):
+                for y in range(0, int(a) - 1):
+                        if x < int(a) - 1 and y < int(a) - 1:
+                            if o_bins[x] <= OMEGA < o_bins[x+1] and T_bins[y] <= TCW < T_bins[y+1]:
+                                bc_hist[y, x, 0] = bc_hist[y, x, 0] + 1
+                                bc_hist[y, x, 1] = bc_hist[y, x, 1] + varP[element]
+        return bc_hist
+
+
 class stormcalcs(object):
     '''Description
        Stage 1: currently a suit of functions for finding information on
@@ -90,29 +128,13 @@ class stormcalcs(object):
 
         self.fcname = fc_csv
         self.ccname = cc_csv
+        self.df_fc = self.createvars(csvnamefc)
+        self.df_cc = self.createvars(csvnamecc)
 
-    def createvars(csvname):
-        df = pd.read_csv(csvname, sep=',')
-        # Remove duplicate storms
-        df = df.drop_duplicates(subset='storms_to_keep', keep='first')
-        # Manipulate varibales and add to dataframe
-        df['cold'] = df.mean_T15_1800 - df.mean_T15_1200
-        df['mslp_diff'] = df.eve_mslp_mean - df.midday_mslp
-        df['u_diff_10m'] = df.eve_wind_99p - df.midday_wind
-        df['u3_diff_10m'] = df.eve_wind3_99p - df.midday_wind3
-        df['precip99'] = df.precip_99th_perc * 3600
-        df['precipvol'] = df.precip_accum * 3600
-        df['shear_TCW_mid'] = df.hor_shear * df.mass_mean_1200
-        df['shear_TCW_eve'] = df.hor_shear * df.mass_mean_1800
-        df['triple_threat_mid'] = shear_TCW_mid * df.omega_1200_1p
-        df['triple_threat_eve'] = shear_TCW_eve * df.omega_1800_1p
-        df['TCW_omega_eve'] = df.mass_mean_1800 * df.omega_1800_1p
-        return [df]
+    def Rorys__precip_correl(self, csvnamefc, csvnamecc, figname):
 
-    def Rorys_Correl(self, csvnamefc, csvnamecc, figname):
-
-        df_fc = self.createvars(csvnamefc)
-        df_cc = self.createvars(csvnamecc)
+        df_fc = self.df_fc
+        df_cc = self.df_cc
 
         panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
@@ -139,16 +161,16 @@ class stormcalcs(object):
         var2f = df_fc.precip99
         var2c = df_cc.precip99
         for i in panelno:
-            prepcorrel_panel_plot(i, figletter[i], var1c[i], var2c, var1f[i],
-                                  var2f, xlab[i])
+            correl_panel_plot(i, figletter[i], var1c[i], var2c, var1f[i],
+                              var2f, xlab[i])
         plt.tight_layout()
-        plt.savefig(figname + '_correlations.png')
+        plt.savefig(figname + '_precip_correlations.png')
         plt.clf()
 
     def Rorys_shear_pdf(self, csvnamefc, csvnamecc, figname):
 
-        df_fc = self.createvars(csvnamefc)
-        df_cc = self.createvars(csvnamecc)
+        df_fc = self.df_fc
+        df_cc = self.df_cc
 
         panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
@@ -181,4 +203,120 @@ class stormcalcs(object):
 
         plt.tight_layout()
         plt.savefig(figname + '_PDF.png')
+        plt.clf()
+
+    def Rorys__Correl(self, csvnamefc, csvnamecc, figname):
+
+        df_fc = self.createvars(csvnamefc)
+        df_cc = self.createvars(csvnamecc)
+
+        panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+        figletter = ['a) ', 'b) ', 'c) ', 'd) ', 'e) ', 'f) ', 'g) ', 'h) ',
+                     'i) ', 'j) ', 'k) ']
+
+        shearlab = '1200 UTC mean shear magnitude (m/s)'
+        mucap = '1200 UTC mean MU-CAPE (J)'
+        mino = '1800 UTC minimum \n omega (Pa/s)'
+        cold = '1800 UTC cold pool \n marker (K)'
+        capesrt = '1200 UTC square root MU-CAPE (J)',
+        bouy = '1800 UTC Max buoyancy (K)'
+        xlab = [shearlab, shearlab, shearlab, '1200 UTC mean OLR (W/m2)',
+                capesrt, bouy, '1200 UTC mean 650 hPa RH (%)', shearlab, mucap,
+                '1800 UTC cold pool marker (%)', mucap, '1200 UTC mean MU-CIN (J)']
+        ylab = ['1800 UTC mean \n OLR (W/m2)', mino, capesrt, mino, mino, mino,
+                cold, '1200 UTC mean \n MU-CAPE (J)', cold, mino, bouy, cold]
+
+        var1c = [df_cc.hor_shear, df_cc.hor_shear, df_cc.hor_shear,
+                 df_cc.OLRs,    df_cc.CAPE_CAPE**0.5, df_cc.buoyancy_1800_1p
+                 df_cc.Tephi_RH650,  df_cc.hor_shear, df_cc.CAPE_CAPE,
+                 df_cc.cold, df_cc.CAPE_CAPE, df_cc.CAPE_CIN]
+
+        var1f = [df_fc.hor_shear, df_fc.hor_shear, df_fc.hor_shear,
+                 df_fc.OLRs,    df_fc.CAPE_CAPE**0.5, df_fc.buoyancy_1800_1p
+                 df_fc.Tephi_RH650,  df_fc.hor_shear, df_fc.CAPE_CAPE,
+                 df_fc.cold, df_fc.CAPE_CAPE, df_fc.CAPE_CIN]
+
+        var2c = [df_cc.OLRs, df_cc.omega_1800_1pc, df_cc.CAPE_CAPE**0.5,
+                 df_cc.omega_1800_1pc,  df_cc.omega_1800_1pc, df_cc.omega_1800_1pc,
+                 df_cc.cold, df_cc.CAPE_CAPE, df_cc.cold, df_cc.omega_1800_1pc,
+                 df_cc.buoyancy_1800_1p, df_cc.cold]
+
+        var2f = [df_fc.OLRs, df_fc.omega_1800_1pc, df_fc.CAPE_CAPE**0.5,
+                 df_fc.omega_1800_1pc,  df_fc.omega_1800_1pc, df_fc.omega_1800_1pc,
+                 df_fc.cold, df_fc.CAPE_CAPE, df_fc.cold, df_fc.omega_1800_1pc,
+                 df_fc.buoyancy_1800_1p, df_fc.cold]
+
+        for i in panelno:
+            correl_panel_plot(i, figletter[i], var1c[i], var2c, var1f[i],
+                              var2f, xlab[i], ylabel=ylab[i])
+        plt.tight_layout()
+        plt.savefig(figname + '_correlations.png')
+        plt.clf()
+
+    def Rorys__Correl(self, csvnamefc, csvnamecc, figname):
+
+        df_fc = self.df_fc
+        df_cc = self.df_cc
+        panelno = [1, 2]
+        figletter = ['a) ', 'b) ']
+        xlab = ['Horizontal wind shear (m/s)', SBCAPE]
+
+        var1c = [df_cc.hor_shear, df_cc.CAPE_CAPE]
+
+        var1f = [df_fc.hor_shear, df_cc.CAPE_CAPE]
+
+        var2c = df_cc.precip99 / (df_cc.shear_TCW_eve * df_cc.omega_1800_1pc)
+
+        var2f = df_fc.precip99 / (df_fc.shear_TCW_eve * df_fc.omega_1800_1pc)
+
+        for i in panelno:
+            correl_panel_plot(i, figletter[i], var1c[i], var2c, var1f[i],
+                              var2f, xlab[i], ylabel='precip/(TCWV x omega)')
+        plt.tight_layout()
+        plt.savefig(figname + '_correlations2.png')
+        plt.clf()
+
+    def histograms(self, panelno, figlet, var1c, var1f, var2c, var2f, xlabel,
+                   ylabel, panels=[2, 2]):
+        T_bins = bins(var1c, var1f)
+        o_bins = bins(var2c, var2cf)
+        bc_hist = np.zeros((int(25), int(25), 2), float)
+        bc_hist = bothhists(bc_hist, var1c, var2c, self.df_cc.precip99, T_bins, o_bins)
+        bc_hist = bothhists(bc_hist, var1f, var2f, self.df_cc.precip99, T_bins, o_bins)
+        for x in range(0, int(a)):
+            for y in range(0, int(a)):
+                if bc_hist[x, y, 0] > 0:
+                    bc_hist[x, y, 1] = (bc_hist[x, y, 1] / bc_hist[x, y, 0])
+                    bc_hist[x, y, 0] = (100 * bc_hist[x, y, 0] /
+                                        (len(var2c) + len(var2f)))
+        pallette1 = plt.get_cmap('rainbow')
+        pallette1.set_under('k', alpha=0.3)
+        pallette1.set_over('Gray')
+        levels = np.linspace(1., np.max(bc_hist[:, :, 1]), 20)
+        cd = plt.pcolor(o_bins, T_bins, bc_hist[:, :, 1], vmin=1.,
+                        vmax=np.max(bc_hist[:, :, 1]), cmap=pallette1)
+        cb = plt.colorbar(cd, orientation='vertical')
+        cb.set_label('both climates \n precip rate (mm/hr)')
+        plt.xlabel(xlab)
+        plt.ylabel(xlab)
+        plt.title(figlet, x=0.01, fontsize=10)
+
+    def Rorys__hist(self, csvnamefc, csvnamecc, figname):
+
+        df_fc = self.df_fc
+        df_cc = self.df_cc
+        figletter = ['a) ', 'b) ',  'c) ', 'd) ']
+        xlab = ['1800 UTC minimum omega (Pa/s)', '1800 UTC minimum omega (Pa/s)']
+        ylab = ['1800 UTC TCW (kg/m2)', '1800 UTC cold pool marker (K)']
+        var1c = []
+        var1f = []all_cube_min_omega_1800_fc all_cube_min_omega_1800_fc all_cube_horizontal_shear_cc
+        var2c = []
+        var2f = []all_cube_TCW_1800_fc  all_cube_cold_pool_fc all_cube_10u_1800_cc
+
+        for i in panelno:
+            self.histograms(i, figletter[i], var1c[i], var2c, var1f[i],
+                            var2f, xlab[i], ylab[i])
+        plt.tight_layout()
+        plt.savefig(figname + '_histograms.png')
         plt.clf()
