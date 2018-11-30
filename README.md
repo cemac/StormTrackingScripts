@@ -13,23 +13,10 @@ https://github.com/cemac/StormTrackingScripts/releases/tag/v.2.0)
 
 Development of Storm Tracking Scripts from ICAS dynamics group.
 
-## Requirements ##
-
- * [Python](https://www.anaconda.com/download/) (Standard anaconda package)
- * [Iris](https://scitools.org.uk/iris/docs/latest)
-
-A full list of Requirements is listed in the yml file (python 2)
-
-<hr>
-
 
 # Version 2.0 #
 
 The first major release of developed scripts. Building from Rory's storm tracking scripts these functions have been moved a modular system. Finding storms in an area, extracting information about those storms and calculating some statistics about those storms and producing a set of Standard plots.
-
-
-## Python 3 ##
-Use the python 3 download. Requires [python SkewT](https://github.com/tjlang/SkewT)
 
 ## New Features ##
 
@@ -39,7 +26,64 @@ Use the python 3 download. Requires [python SkewT](https://github.com/tjlang/Ske
 * Reduction in lines of code from 3600 to 1100
 * Large increase in comments docstrings
 
-## Usage ##
+## Upcoming Features ##
+
+0. Plotting tools
+2. Documentation improvements
+4. STASH code variable library
+3. Feature requests
+4. Switch to CF-python
+5. minor speed up
+1. Python GUI
+
+## Requirements ##
+
+ * [Python](https://www.anaconda.com/download/) (Standard anaconda package)
+ * [Iris](https://scitools.org.uk/iris/docs/latest)
+
+A full list of Requirements is listed in the yml file (python 2)
+
+<hr>
+
+# Installation (recommended method) #
+
+Storm Scripts requires a few non-standard modules (skewt, meteocalc). anaconda or miniconda is the recommended method of Installation.
+
+## Python 2 ##
+
+```bash
+
+# download anaconda installer
+wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+bash Miniconda2-latest-Linux-x86_64.sh #skip if you already have anaconda
+export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
+conda clean -t
+
+```
+
+## Python 3 ##
+
+*SkewT python 3 support is not yet in the anaconda cloud coming soon, for now an
+extra step is required*
+
+````bash
+
+# download anaconda installer
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh #skip if you already have anaconda
+export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
+
+
+git clone https://github.com/tjlang/SkewT.git
+cd SkewT
+python setup.py install
+conda clean -t
+
+````
+
+<hr>
+
+# Usage #
 
 Keep Python package folder.
 
@@ -81,56 +125,10 @@ dmf.genvarscsv(idstring, storms_to_keep)
 
 <hr>
 
-## Installation (recommended) ##
-
-Storm Scripts requires a few non-standard modules (skewt, meteocalc). anaconda or miniconda is the recommended method of Installation.
-
-### Python 2 ###
-
-```bash
-
-# download anaconda installer
-wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-bash Miniconda2-latest-Linux-x86_64.sh #skip if you already have anaconda
-export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
-conda clean -t
-
-```
-
-### Python 3 ###
-
-*SkewT python 3 support is not yet in the anaconda cloud coming soon, for now an
-extra step is required*
-
-````bash
-
-# download anaconda installer
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh #skip if you already have anaconda
-export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
-
-
-git clone https://github.com/tjlang/SkewT.git
-cd SkewT
-python setup.py install
-conda clean -t
-
-````
-
 
 ## Issue Templates ##
 
 * Please use our issue templates for feature requests and bug fixes.
-
-## Upcoming Features ##
-
-0. Plotting tools
-2. Documentation improvements
-4. STASH code variable library
-3. Feature requests
-4. Switch to CF-python
-5. minor speed up
-1. Python GUI
 
 <hr>
 
