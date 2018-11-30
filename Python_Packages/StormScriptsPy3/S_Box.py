@@ -1,22 +1,26 @@
 # -*- coding: utf-8 -*-
-"""Paralell Stormsin a box
+"""Stormsin a box
 
-This module was developed by CEMAC as part of the AMAMA 2050 Project.
-This scripts build on Work done my Rory Fitzpatrick, taking the stroms saved in
-the folderroot text files for a certain area and saving the specified variables
-into a cvs file to be used in dataminer.py. This is the Paralell version of
-stromsinabox.py
+.. module:: S_Box
+    :platform: Unix
+    :synopis:
+
+.. moduleauther: CEMAC (UoL)
+
+.. description: This module was developed by CEMAC as part of the AMAMA 2050
+   Project. This scripts build on Work done my Rory Fitzpatrick, taking the
+   stroms saved in the folderroot text files for a certain area and saving the
+   specified variables into a cvs file to be used in dataminer.py. This will
+   run in parallel on machines with >4 cores.
+
+   :copyright: © 2018 University of Leeds.
+   :license: BSD-2 Clause.
 
 Example:
     To use::
-        module load pstromopinabox.py
-        c = pstromsinabox.storminbox(x1, x2, y1, y2, size_of_storm, idstring)
-        c.genstormboxcsv()
-
-Attributes:
-    varslist(list): List of vairables required in dataminer
-    fname(str): File to extract lat and lons
-    froot(str): Root folder of data
+        import StormScriptsPy3 as SSP3
+        c = SSP3.S_Box.StormInBox(x1, x2, y1, y2, size_of_storm, idstring, run='fc')
+        c.gen_storm_box_csv()
 
 .. CEMAC_stomtracking:
    https://github.com/cemac/StormTrackingScripts
@@ -41,42 +45,69 @@ copyreg.pickle(types.MethodType, Pfuncts._pickle_method)
 
 
 class StormInBox():
-    '''Description
-       Stage 1: currently a suit of functions for finding information on
-       storms in region and Generating cvs files of that information.
+    '''Find the storms in specified box
 
-       Attributes:
-        x1(int): longitude index East
-        x2(int): longitude index West
-        y1(int): latitude index South
-        y2(int): latitude index North
-        size_of_storm(int): size of storm in km e.g 5000
+    Takes the stroms saved in the folderroot text files for a certain area
+    and saves the specified variables into a cvs file to be used in
+    S_dataminer.py. This will run in parallel on machines with >4 cores.
+
     '''
-    def __init__(self, x1, x2, y1, y2, size_of_storm, idstring, run='cc', root=None, stormhome='./'):
+    def __init__(self, x1, x2, y1, y2, size_of_storm, idstring, run='cc',
+                 root=None, stormhome='./'):
+        """Initialise with storm information
 
+        Note:
+            currently if you want to edit the underlying vrariables do this
+            here e.g. the grid definition or variable list.
+
+        Args:
+            x1 (int): longitude of Western edge of box
+            x2 (int): longitude of Eastern edge of box
+            y1 (int): longitude of Southern edge of box
+            y2 (int): latitude of Nothern edge of box
+            size_of_storm (int): size of storm e.g. 5000
+            idstring (:obj:`str`, optional): lable to identify these storms -
+                this will lable the output.
+            run (:obj:`str`, optional): a model run identifier such as cc or fc
+                found in the file structure. Default is 'cc'
+            root (:obj:`str`, optional): if using not fc or cc you must specify
+                the root directory of data.
+            stormhome (:obj:`str`, optional): where to store the output.
+                Default is current directory './'
+        """
+
+        # Initialise variables
         self.size = size_of_storm
         self.x1, self.x2, self.y1, self.y2 = [x1, x2, y1, y2]
+        # June to October
         self.m1, self.m2 = [6, 10]
         self.idstring = idstring
+        # Variables to output
         self.varslist = ['stormid', 'year', 'month', 'day', 'hour', 'llon',
                          'ulon', 'llat', 'ulat', 'centlon', 'centlat', 'area',
                          'mean_olr']
+        # Initialise grid variables (lat and lon)
         fname = ('/nfs/a277/IMPALA/data/4km/a03332_12km/a03332_A1hr_mean_' +
                  'ah261_4km_200012070030-200012072330.nc')
         cube = iris.load(fname)[1]
         self.lon = cube.coord('longitude').points
         self.lat = cube.coord('latitude').points
+        # Variables in Julia's output
         self.cols = ['storm', 'no', 'area', 'centroid', 'box', 'life', 'u',
                      'v', 'mean', 'min', 'max', 'accreted', 'parent', 'child',
                      'cell']
-        # Data root, will depend on
+        # Data root, will depend on run information
+        # To start with we use cc or fc but you can specify your own via
+        # class args
         if run == 'cc':
             root = '/nfs/a277/IMPALA/data/4km/'
+            # File name contains date information at specific locations
             self.mstr1 = 90
             self.mstr2 = 92
             self.start_yr = '_1999'
         elif run == 'fc':
             root = '/nfs/a299/IMPALA/data/fc/4km/'
+            # File name contains date information at specific locations
             self.mstr1 = 95
             self.mstr2 = 97
             self.start_yr = '_1997'
@@ -88,15 +119,17 @@ class StormInBox():
         self.run = run
 
     def create_dataframe_all(self):
-        """Description
-       Create a data frame of file names
+        """Create a daNote:
 
-       Attributes:
-       froot(str): file root
+        Note:
+            If no run in spefified the file pattern is unknow and all files
+            will be listed not just certain months.
 
-       Returns:
-       df(DataFrame): A data frame of storm file names
+        Returns:
+            DataFrame: list of files
         """
+        # Check if this has already been done
+        # If not iterate over files in file pattern
         try:
             df = pd.read_csv(self.H + self.run + 'filelist.csv', sep=',')
             return df
@@ -109,7 +142,7 @@ class StormInBox():
                     modf2['file'].loc[i] = rw
             df = df2.reset_index(drop=True)
             df.to_csv(self.H + self.run + 'filelist.csv', sep=',')
-        # find start year
+        # find start year for later
         yrloc = df.file[1].find('hourly/')
         strtyr = df.file[1][yrloc+7:yrloc+11]
         self.start_yr = '_'+str(strtyr)
@@ -118,15 +151,13 @@ class StormInBox():
         return df
 
     def create_dataframe(self):
-        """Description
-       Create a data frame of file names
-
-       Attributes:
-       froot(str): file root
+        """Create a data frame of file names
 
        Returns:
-       df(DataFrame): A data frame of storm file names
+        df(DataFrame): A data frame of storm file names
         """
+        # Check if this has already been done
+        # If not iterate over files in file pattern
         try:
             df = pd.read_csv(self.H + self.run + 'filelist.csv', sep=',')
             return df
@@ -145,19 +176,20 @@ class StormInBox():
         return df
 
     def find_the_storms(self, df):
-        '''find the storms
-            Description:
-                Find the storms in box specified and above size specified. A
-                timer is added giving the average progess of each processor.
+        '''From the data in the files find the storms in box specified and
+            above size specified.
 
-            Attributes:
-                df: dataframe of file names
+        Arg:
+            df: dataframe of file names
 
-            Returns:
-                stormsdf: DataFrame of storms meeting criteria
+        Returns:
+            dataframe: stormsdf a DataFrame of storms meeting criteria
         '''
+        # p1 and p2 are place markers for the datestamp in filename
         p2 = self.p1 + 8
+        # Create a dataframe wite column headers we want.
         stormsdf = pd.DataFrame(columns=self.varslist)
+        # Iterate over every file
         for row in df.itertuples():
             cfile = row.file  # current file
             # read in whole csv
@@ -220,13 +252,19 @@ class StormInBox():
     def gen_storm_box_csv(self, altrun='N', nice=4, shared='Y'):
         '''generate storms csvs
 
-            Attributes:
-                nice(int): niceness 1/nice share of machince.
-                shared(str): 'Y' or 'N' using shared resource.
+        Args:
+            altrun (str, optional): Default 'N', if 'Y' then use more liberal
+                method to generate file list.
+            nice (int, optional): niceness 1/nice share of machince. Default: 4
+            shared (str, optional): 'Y' or 'N' if using shared resource.
+                Default: 'Y'.
 
-            Returns:
-                csvfile: file of stromsinabox
+        Returns:
+            csvfile: csvfile eg:
+             fc_teststorms_over_box_area5000_lons_345_375_lat_10_18.csv
         '''
+        # Check parallel settings and fair use.
+        # DO NOT BE RUDE ON SHARED RESOURCES - PLAYING NICE IS ENFORCED HERE!
         if nice == 1 and shared == 'Y':
             print('WARNING: Using a whole machine is not very nice')
             print('Setting to quater machine....')
@@ -241,12 +279,19 @@ class StormInBox():
             if not ans:
                 print('Please revise nice number to higher value and try again...')
                 return
-        df = self.create_dataframe()
-        # find the date string
+        # Call class method create_dataframe
+        if altrun == 'N':
+            df = self.create_dataframe()
+        else:
+            df = self.create_dataframe_all()
+        # find the date string place holder
         self.p1 = df.file[1].find(self.start_yr) + 1
+        # Call the parallel function that chuck up the dataframe.
         pstorms = Pfuncts.parallelize_dataframe(df, self.find_the_storms, nice)
+        # Remove any duplicates
         pstormsdf = pstorms.drop_duplicates(subset='stormid', keep='first',
                                             inplace=False).reset_index(drop=True)
+        # Write out csv wrt storage dir identifier and parameters.
         pstormsdf.to_csv(self.H + self.idstring + 'storms_over_box_area' +
                          str(self.size) + '_lons_' + str(self.x1) + '_' + str(self.x2) +
                          '_lat_' + str(self.y1) + '_' + str(self.y2)+'.csv')
