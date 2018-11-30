@@ -39,7 +39,6 @@ The first major release of developed scripts. Building from Rory's storm trackin
 ## Requirements ##
 
  * [Python](https://www.anaconda.com/download/) (Standard anaconda package)
- * [Iris](https://scitools.org.uk/iris/docs/latest)
 
 A full list of Requirements is listed in the yml file (python 2)
 
@@ -57,6 +56,8 @@ Storm Scripts requires a few non-standard modules (skewt, meteocalc). anaconda o
 wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
 bash Miniconda2-latest-Linux-x86_64.sh #skip if you already have anaconda
 export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
+cd StormTrackingScripts
+conda env create -f StormScriptsPy2.yml
 conda clean -t
 
 ```
@@ -72,11 +73,11 @@ extra step is required*
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh #skip if you already have anaconda
 export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
-
-
 git clone https://github.com/tjlang/SkewT.git
 cd SkewT
 python setup.py install
+cd StormTrackingScripts
+conda env create -f StormScriptsPy3.yml
 conda clean -t
 
 ````
@@ -97,29 +98,15 @@ import numpy as np
 import pandas as pd
 import StormScriptsPy3 as SSP3
 
-
-# Box dimensions
-x1, x2 = [345, 375]
-y1, y2 = [10, 18]
-# run id
-size_of_storm = 5000
-# corresponding data_dirs
-dataroot = '/path/to/data/'
-# Where to store the generated files
-stormhome = expanduser("~")+'/storm_project/'
-# label these storms
-idstring = 'mystorms'
 # print some help?
 SSP3.S_Box.StormInBox?
 # Define your storms
-c = SSP3.S_Box.StormInBox(x1, x2, y1, y2, size_of_storm, idstring)
+c = SSP3.S_Box.StormInBox(345, 375, 10, 18, 5000, 'cc_storms_')
 # generate the list of storms
 c.gen_storm_box_csv()
 # point to data and if you want the full set of calculations done
-dmf = SSP3.dm_functions(dataroot, CAPE='Y', TEPHI='Y')
-csvname = 'the_file_you_just_generated.csv'
-storms_to_keep = pd.read_csv(csvname, sep=',')
-dmf.genvarscsv(idstring, storms_to_keep)
+dmf = SSP3.dm_functions('/path/to/data/', CAPE='Y', TEPHI='Y')
+dmf.genvarscsv('cc_storms_', pd.read_csv('generated_file.csv', sep=',')
 
 ```
 
