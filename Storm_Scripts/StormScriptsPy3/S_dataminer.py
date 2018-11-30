@@ -33,7 +33,6 @@ import os
 import copyreg
 import warnings
 import types
-import gc
 import pandas as pd
 import numpy as np
 import iris
@@ -97,6 +96,10 @@ class dm_functions():
         self.evemid = [11, 17]
         # Column headers. Messy to list.
         self.allvars = pd.read_csv('data/all_vars_template.csv')
+
+    def dataise(self, var): return var.data
+
+    def nodata(self, var): return var
 
     def gen_flist(self, storminfo, varnames, varcodes=None):
         """Generate filelist
@@ -210,7 +213,6 @@ class dm_functions():
                 qf = flist[flist.varname == 'Q'].file
                 fnamelist = [qf, q15f, Tf, t15f]
                 self.calc_cape(fnamelist, u, v, precip99, xy, idx, latlons)
-            gc.collect()
         return self.allvars
 
     def genvarscsv(self, csvroot, storms_to_keep, nice=4, shared='Y'):
@@ -266,18 +268,13 @@ class dm_functions():
         Returns:
             Fills data frame value
         '''
-        str1200, strmean, str99p = strings
-        # Loop midday and evening
-        for num in self.evemid:
-            varn = var[num, :, :]
-            varmean = cubemean(varn).data
-            if num == 11:
-                # midday mean value
-                self.allvars[str1200].loc[idx] = varmean
-            else:
-                var99p = cube99(varn, per=p)
-                self.allvars[strmean].loc[idx] = varmean  # evening mean
-                self.allvars[str99p].loc[idx] = var99p  # evening 99th %
+        eve = [11, 17, 17]
+        for i in range(2):
+            vari = var[eve[i], :, :]
+            varn = cubemean(vari)
+            self.allvars[strings[i]].loc[idx] = varn.data
+        var99p = cube99(vari, per=p)
+        self.allvars[strings[2]].loc[idx] = var99p
 
     def calc_t15(self, t15f, xy, idx):
         '''Description: mean99 for T15 (air_temperature) variable
@@ -321,24 +318,18 @@ class dm_functions():
             Fills wind related data frame values
         '''
         # Loop for 1200 and 1800
-        for num in self.evemid:
-            mwind = (iris.analysis.maths.exponentiate(u[num, :, :], 2) +
-                     iris.analysis.maths.exponentiate(v[num, :, :], 2))
-            # loop for exponentiate sqrt and cubed
-            for lex in [0.5, 3]:
-                mwind2 = iris.analysis.maths.exponentiate(mwind, lex)
-                mwind1p = cube99(mwind2)
-                mwind2 = cubemean(mwind2).data
-                if lex == 0.5 and num == 11:
-                    self.allvars['midday_wind'].loc[idx] = mwind2
-                elif num == 11 and lex == 3:
-                    self.allvars['midday_wind3'].loc[idx] = mwind2
-                elif lex == 0.5 and num == 17:
-                    self.allvars['eve_wind_mean'].loc[idx] = mwind2
-                    self.allvars['eve_wind_99p'].loc[idx] = mwind1p
-                elif lex == 3 and num == 17:
-                    self.allvars['eve_wind3_mean'].loc[idx] = mwind2
-                    self.allvars['eve_wind3_99p'].loc[idx] = mwind1p
+        strings = ['midday_wind', 'midday_wind3', 'eve_wind_mean',
+                   'eve_wind3_mean', 'eve_wind_99p', 'eve_wind3_99p']
+        eve = [11, 11, 17, 17, 17, 17]
+        lex = [0.5, 3, 0.5, 3, 0.5, 3]
+        func = cubemean, cubemean, cubemean, cube99, cube99
+        func2 = self.dataise, self.dataise, self.dataise, self.nodata, self.nodata
+        for x, y, z, f, g in zip(eve, lex, strings, func, func2):
+            mwind = (iris.analysis.maths.exponentiate(u[x, :, :], 2) +
+                     iris.analysis.maths.exponentiate(v[x, :, :], 2))
+            mwind2 = iris.analysis.maths.exponentiate(mwind, y)
+            var = f(mwind2)
+            self.allvars[z].loc[idx] = g(var)
 
     def calc_tow(self, of, Tf, xy600, idx):
         '''Description: Calculate bouyancy, omega and max for eveing midday etc
@@ -441,13 +432,12 @@ class dm_functions():
         mass = wet
         mass.data = wet.data + dry.data
         mass.extract(xy)
-        for num in self.evemid:
-            massn = mass[num, :, :]
+        eve = [11, 17]
+        strings = ['mass_mean_1200', 'mass_mean_1800']
+        for x, y, in zip(eve, strings):
+            massn = mass[x, :, :]
             massm = cubemean(massn).data
-            if num == 11:
-                self.allvars['mass_mean_1200'].loc[idx] = massm
-            else:
-                self.allvars['mass_mean_1800'].loc[idx] = massm
+            self.allvars[y].loc[idx] = massm
 
     def calc_cape(self, fnamelist, u, v, precip99, xy, idx, latlons):
         r'''Description:
@@ -489,6 +479,7 @@ class dm_functions():
         Qp = q850.data
         # get rid of values sub 100?
         Tp[Tp < 100] = np.nan
+        Qp[Qp < 100] = np.nan
         Tcol = np.zeros(Tp.shape[0])
         Qcol = np.zeros(Tp.shape[0])
         for p in range(0, Tp.shape[0]):
