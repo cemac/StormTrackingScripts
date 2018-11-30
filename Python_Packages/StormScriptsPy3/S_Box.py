@@ -72,8 +72,14 @@ class StormInBox():
         # Data root, will depend on
         if run == 'cc':
             root = '/nfs/a277/IMPALA/data/4km/'
+            self.mstr1 = 90
+            self.mstr2 = 92
+            self.start_yr = '_1999'
         elif run == 'fc':
             root = '/nfs/a299/IMPALA/data/fc/4km/'
+            self.mstr1 = 95
+            self.mstr2 = 97
+            self.start_yr = '_1997'
         else:
             if root is None:
                 sys.exit('Please specify data root eg. /nfs/a299/IMPALA/data/fc/4km/')
@@ -81,6 +87,35 @@ class StormInBox():
         self.H = stormhome
         self.run = run
 
+    def create_dataframe_all(self):
+        """Description
+       Create a data frame of file names
+
+       Attributes:
+       froot(str): file root
+
+       Returns:
+       df(DataFrame): A data frame of storm file names
+        """
+        try:
+            df = pd.read_csv(self.H + self.run + 'filelist.csv', sep=',')
+            return df
+        except IOError:
+            df2 = pd.DataFrame(columns=['file'])
+            i = 0
+            for rw in glob.iglob(self.froot+'*/a04203*4km*.txt'):
+                    i += 1
+                    df2.loc[i] = 0
+                    modf2['file'].loc[i] = rw
+            df = df2.reset_index(drop=True)
+            df.to_csv(self.H + self.run + 'filelist.csv', sep=',')
+        # find start year
+        yrloc = df.file[1].find('hourly/')
+        strtyr = df.file[1][yrloc+7:yrloc+11]
+        self.start_yr = '_'+str(strtyr)
+        # Storms we want have this infor
+        print('generated file list...')
+        return df
 
     def create_dataframe(self):
         """Description
@@ -98,8 +133,8 @@ class StormInBox():
         except IOError:
             df2 = pd.DataFrame(columns=['file'])
             i = 0
-            for rw in glob.iglob(self.froot+'*/a04203*4km*0030-*2330*.txt'):
-                if rw[90:92] in [str(x).zfill(2) for x in range(self.m1, self.m2)]:
+            for rw in glob.iglob(self.froot+'*/a04203*4km*.txt'):
+                if rw[self.mstr1:self.mstr2] in [str(x).zfill(2) for x in range(self.m1, self.m2)]:
                     i += 1
                     df2.loc[i] = 0
                     df2['file'].loc[i] = rw
@@ -121,6 +156,7 @@ class StormInBox():
             Returns:
                 stormsdf: DataFrame of storms meeting criteria
         '''
+        p2 = self.p1 + 8
         stormsdf = pd.DataFrame(columns=self.varslist)
         for row in df.itertuples():
             cfile = row.file  # current file
@@ -170,7 +206,7 @@ class StormInBox():
             stormsdf2.ulat = storms.ulat
             stormsdf2.centlon = storms.centlon
             stormsdf2.centlat = storms.centlat
-            datestamp = pd.to_datetime(cfile[86:98])
+            datestamp = pd.to_datetime(cfile[self.p1:p2])
             stormsdf2.month = datestamp.month
             stormsdf2.day = datestamp.day
             stormsdf2.hour = datestamp.hour
@@ -181,7 +217,7 @@ class StormInBox():
             gc.collect()  # Clear cache of unreference memeory
         return stormsdf
 
-    def gen_storm_box_csv(self, nice=4, shared='Y'):
+    def gen_storm_box_csv(self, altrun='N', nice=4, shared='Y'):
         '''generate storms csvs
 
             Attributes:
@@ -206,6 +242,8 @@ class StormInBox():
                 print('Please revise nice number to higher value and try again...')
                 return
         df = self.create_dataframe()
+        # find the date string
+        self.p1 = df.file[1].find(self.start_yr) + 1
         pstorms = Pfuncts.parallelize_dataframe(df, self.find_the_storms, nice)
         pstormsdf = pstorms.drop_duplicates(subset='stormid', keep='first',
                                             inplace=False).reset_index(drop=True)
