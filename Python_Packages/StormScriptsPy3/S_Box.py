@@ -8,8 +8,8 @@
 .. moduleauther: CEMAC (UoL)
 
 .. description: This module was developed by CEMAC as part of the AMAMA 2050
-   Project. This scripts build on Work done my Rory Fitzpatrick, taking the
-   stroms saved in the folderroot text files for a certain area and saving the
+   Project. This script builds on Work done my Rory Fitzpatrick, taking the
+   storms saved in the folderroot text files for a certain area and saving the
    specified variables into a cvs file to be used in dataminer.py. This will
    run in parallel on machines with >4 cores.
 
@@ -47,7 +47,7 @@ copyreg.pickle(types.MethodType, Pfuncts._pickle_method)
 class StormInBox():
     '''Find the storms in specified box
 
-    Takes the stroms saved in the folderroot text files for a certain area
+    Takes the storms saved in the folderroot text files for a certain area
     and saves the specified variables into a cvs file to be used in
     S_dataminer.py. This will run in parallel on machines with >4 cores.
 
@@ -57,7 +57,7 @@ class StormInBox():
         """Initialise with storm information
 
         Note:
-            currently if you want to edit the underlying vrariables do this
+            currently, if you want to edit the underlying variables do this
             here e.g. the grid definition or variable list.
 
         Args:
@@ -66,8 +66,8 @@ class StormInBox():
             y1 (int): longitude of Southern edge of box
             y2 (int): latitude of Nothern edge of box
             size_of_storm (int): size of storm e.g. 5000
-            idstring (:obj:`str`, optional): lable to identify these storms -
-                this will lable the output.
+            idstring (:obj:`str`, optional): label to identify these storms -
+                this will label the output.
             run (:obj:`str`, optional): a model run identifier such as cc or fc
                 found in the file structure. Default is 'cc'
             root (:obj:`str`, optional): if using not fc or cc you must specify
@@ -119,10 +119,10 @@ class StormInBox():
         self.run = run
 
     def create_dataframe_all(self):
-        """Create a daNote:
+        """Create a datatfame of files:
 
         Note:
-            If no run in spefified the file pattern is unknow and all files
+            If no run in specified the file pattern is unknown and all files
             will be listed not just certain months.
 
         Returns:
@@ -137,9 +137,9 @@ class StormInBox():
             df2 = pd.DataFrame(columns=['file'])
             i = 0
             for rw in glob.iglob(self.froot+'*/a04203*4km*.txt'):
-                    i += 1
-                    df2.loc[i] = 0
-                    modf2['file'].loc[i] = rw
+                i += 1
+                df2.loc[i] = 0
+                df2['file'].loc[i] = rw
             df = df2.reset_index(drop=True)
             df.to_csv(self.H + self.run + 'filelist.csv', sep=',')
         # find start year for later
@@ -255,7 +255,7 @@ class StormInBox():
         Args:
             altrun (str, optional): Default 'N', if 'Y' then use more liberal
                 method to generate file list.
-            nice (int, optional): niceness 1/nice share of machince. Default: 4
+            nice (int, optional): niceness 1/nice share of machine. Default: 4
             shared (str, optional): 'Y' or 'N' if using shared resource.
                 Default: 'Y'.
 
