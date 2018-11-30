@@ -9,3 +9,6 @@ build/
 source/
 Makefile
 Workforw.md
+*/*.txt
+*/*test*.py
+Parallel_Scripts/
