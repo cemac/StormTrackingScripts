@@ -117,12 +117,12 @@ class dm_functions():
             ds = pd.Series(os.listdir(self.dataroot))
             foldername = ds[ds.str.len() == 6].reset_index(drop=True)
         df = pd.DataFrame(columns=['file', 'codes', 'varname'])
-        for i in range(self.novars):
+        for i, folder in enumerate(foldername):
             try:
-                df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
-                                       + '/' + str(foldername[i]) + '*_' +
+                df.loc[i] = [glob.glob(str(self.dataroot) + str(folder)
+                                       + '/' + str(folder) + '*_' +
                                        str(storminfo) + '*-*.nc')[0],
-                             foldername[i], varnames[i]]
+                             folder, varnames[i]]
             except IndexError:
                 pass
         return df
@@ -155,6 +155,8 @@ class dm_functions():
                 flist = self.gen_flist(storminfo, self.vars['varname'],
                                        varcodes=self.vars['code'])
                 if flist['file'].isnull().sum() > 0:
+                    # reset storminfo else missing file won't get caught...
+                    storminfo = 00000000
                     print('WARNING: Storm missing data files, skipping...')
                     continue
             # location of storm
