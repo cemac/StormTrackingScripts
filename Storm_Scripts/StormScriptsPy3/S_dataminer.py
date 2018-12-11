@@ -97,6 +97,7 @@ class dm_functions():
         self.evemid = [11, 17]
         # Column headers. Messy to list.
         self.allvars = pd.read_csv('data/all_vars_template.csv')
+        self.mcdp = np.vectorize(meteocalc.dew_point)
 
     def dataise(self, var): return var.data
 
@@ -476,62 +477,33 @@ class dm_functions():
             mslp = 975
         # Special slice
         xy850 = genslice(latlons, n1=mslp, n2=100)
+        T = iris.load_cube(Tf)
+        Q = iris.load_cube(qf)
         T850 = T[3, :, :].extract(xy850)
-        q850 = q[3, :, :].extract(xy850)
+        q850 = Q[3, :, :].extract(xy850)
         Tp = T850.data
         Qp = q850.data
-        # get rid of values sub 100?
-        Tp[Tp < 100] = np.nan
-        Qp[Qp < 100] = np.nan
-        Tcol = np.zeros(Tp.shape[0])
-        Qcol = np.zeros(Tp.shape[0])
-        for p in range(0, Tp.shape[0]):
-            Tcol[p] = np.nanmean(Tp[p, :, :])
-            Qcol[p] = np.nanmean(Qp[p, :, :])
-        Tcube = cubemean(T850)
-        Qcube = cubemean(q850)
-        Tcube.data = Tcol
-        Qcube.data = Qcol
-        pval = Tcube.data.shape[0] + 1
-        f_T = T[3, : pval, 1, 1]
-        f_q = q[3, : pval, 1, 1]
-        f_T.data[:pval-1] = Tcol
-        f_q.data[:pval-1] = Qcol
-        t15 = cubemean(iris.load_cube(t15f)[11, :, :].extract(xy))
-        P = self.allvars['eve_mslp_mean'].loc[idx]/100
-        f_T.data[pval-1] = t15.data
-        q15 = iris.load_cube(q15f)
-        q15 = q15[11, :, :].extract(xy)
-        f_q.data[pval-1] = cubemean(q15).data
-        T = f_T.data
-        hum = f_q.data
+        Tcol = np.nanmean(Tp, axis=(1, 2))
+        Qcol = np.nanmean(Qp, axis=(1, 2))
+        pressures = T850.coord('pressure').points
+        P = np.append(pressures, mslp)
+        pval = T850.data.shape[0] + 1
+        Temp = Tcol
+        T15 = cubemean(iris.load_cube(t15f)[11, :, :].extract(xy)).data
+        T = np.append(Temp, T15)
         Tkel = T - 273.16
-        pressures = Tcube.coord('pressure').points
-        pressures = np.append(pressures, mslp)
-        P = pressures * 100
-        pnum = len(pressures)
-        height = np.zeros((pnum))
-        dwpt = np.zeros((pnum))
-        humity = np.zeros((pnum))
-        RH_650 = np.zeros((pnum))
-        if pnum == 18:
-            for p in range(0, pnum):
-                if 710. >= P[p] > 690.:
-                    RH_650[p] = ([(0.263 * hum[p] * P[p]) /
-                                  2.714**((17.67*(Tkel[p])) /
-                                          (T[p] - 29.65))])
-
-                humity[p] = ((0.263 * hum[p] * P[p]) /
-                             2.714**((17.67*(Tkel[p]))/(T[p] - 29.65)))
-                try:
-                    dwpt[p] = meteocalc.dew_point(temperature=Tkel[p],
-                                                  humidity=humity[p])
-                except ValueError:
-                    dwpt[p] = np.nan
-                if p < pnum-1:
-                    height[p] = T[p]*((mslp*100/P[p])**(1./5.257) - 1)/0.0065
-                else:
-                    height[p] = 1.5
+        humcol = Qcol
+        Q15 = cubemean(iris.load_cube(q15f)[11, :, :].extract(xy)).data
+        hum = np.append(humcol, Q15)
+        dwpt = np.zeros_like(P)
+        if pval == 18:
+            humidity = ((0.263 * hum * P*100) / 2.714**((17.67*(Tkel))/(T - 29.65)))
+            height = T*((mslp/P)**(1./5.257) - 1)/0.0065
+            height[-1] = 1.5
+            dwpt[:] = self.mcdp(Tkel, humidity)  # vectorized dew_point calc
+        else:
+            height, dwpt, humity, RH_650 = np.zeros((4, pval))
+        RH_650 = RH_650[np.where((P > 690) & (P <= 710))[0]]
         xwind = cubemean(u[3, :, :])
         ywind = cubemean(v[3, :, :])
         self.allvars['Tephi_pressure'].loc[idx] = np.average(pressures, axis=0)
@@ -544,7 +516,7 @@ class dm_functions():
         self.allvars['Tephi_ywind'].loc[idx] = ywind.data
         self.allvars['Tephi_RH650'].loc[idx] = np.average(RH_650, axis=0)
         mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
-                          (height[::-1], pressures[::-1], T.data[::-1],
+                          (height[::-1], P[::-1], Tkel[::-1],
                            dwpt[:: -1])))
         try:
             S = sk.Sounding(soundingdata=mydata)
@@ -553,8 +525,8 @@ class dm_functions():
         except AssertionError:
             print('dew_point = ', dwpt[:: -1])
             print('height = ', height[:: -1])
-            print('pressures = ', pressures[:: -1])
-            print('Temp = ', T.data[:: -1])
+            print('pressures = ', P[:: -1])
+            print('Temp = ', TKel[:: -1])
             print('AssertionError: Use a monotonically increasing abscissa')
             print('Setting to np.nan')
             P_lcl, P_lfc, P_el, CAPE, CIN = [np.nan, np.nan, np.nan, np.nan, np.nan]
