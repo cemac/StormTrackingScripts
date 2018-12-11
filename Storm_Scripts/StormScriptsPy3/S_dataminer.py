@@ -90,6 +90,7 @@ class dm_functions():
         self.dataroot = dataroot
         # Varibales from configuration file.
         self.vars = pd.read_csv('data/stash_vars.csv')
+        self.varnos = len(self.vars)
         # For efficiency len is not called in a for loop
         self.novars = len(self.vars)
         # 1200 and 1800 time variables
@@ -154,7 +155,7 @@ class dm_functions():
             if storminfo != storminfo1:
                 flist = self.gen_flist(storminfo, self.vars['varname'],
                                        varcodes=self.vars['code'])
-                if flist['file'].isnull().sum() > 0:
+                if len(flist) < self.varnos:
                     # reset storminfo else missing file won't get caught...
                     storminfo = 00000000
                     print('WARNING: Storm missing data files, skipping...')
