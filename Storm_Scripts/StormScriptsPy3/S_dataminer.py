@@ -444,9 +444,7 @@ class dm_functions():
         # load cubes
         wet = iris.load_cube(wetf).extract(xy)
         dry = iris.load_cube(dryf).extract(xy)
-        mass = wet
-        mass.data = wet.data + dry.data
-        mass.extract(xy)
+        mass = iris.analysis.maths.apply_ufunc(np.add, wet, dry)
         eve = [11, 17]
         strings = ['mass_mean_1200', 'mass_mean_1800']
         for x, y, in zip(eve, strings):
