@@ -54,10 +54,13 @@ def slicer(ps, val):
 
 
 # dataise and no data allow for zipped loop
-def dataise(self, var): return var.data
+def dataise(var): return var.data
 
 
-def nodata(self, var): return var
+def nodata(var): return var
+
+
+slicevec = np.vectorize(slicer)
 
 
 class dm_functions():
