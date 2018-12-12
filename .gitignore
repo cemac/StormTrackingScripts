@@ -1,0 +1,17 @@
+.tasks.md
+csvs
+*.csv
+*/*.pyc
+*.pyc
+.outline.md
+Prototypes/
+build/
+source/
+Makefile
+Workforw.md
+*/*.txt
+*/*test*.py
+Parrallel_Scripts/
+Releasenotes.txt
+Parrallel_Scripts/*
+*/*__pycache__
