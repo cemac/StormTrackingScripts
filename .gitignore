@@ -5,12 +5,11 @@ csvs
 *.pyc
 .outline.md
 Prototypes/
-Parrallel_Scripts/
 build/
 source/
 Makefile
 Workforw.md
 */*.txt
 */*test*.py
-Parallel_Scripts/
+Parrallel_Scripts/
 Releasenotes.txt
