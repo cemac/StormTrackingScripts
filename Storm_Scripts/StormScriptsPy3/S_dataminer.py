@@ -541,7 +541,7 @@ class dm_functions():
             print('dew_point = ', dwpt[:: -1])
             print('height = ', height[:: -1])
             print('pressures = ', P[:: -1])
-            print('Temp = ', TKel[:: -1])
+            print('Temp = ', Tkel[:: -1])
             print('AssertionError: Use a monotonically increasing abscissa')
             print('Setting to np.nan')
             P_lcl, P_lfc, P_el, CAPE, CIN = [np.nan, np.nan, np.nan, np.nan, np.nan]
