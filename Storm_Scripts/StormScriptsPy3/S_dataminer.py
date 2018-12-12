@@ -47,6 +47,19 @@ if not sys.warnoptions:
 copyreg.pickle(types.MethodType, Pf._pickle_method)
 
 
+# performance relaced functions: Slicer allows vectorized contraints
+def slicer(ps, val):
+            smslice = iris.Constraint(pressure=lambda cell: cell == ps)
+            return val.extract(smslice).data
+
+
+# dataise and no data allow for zipped loop
+def dataise(self, var): return var.data
+
+
+def nodata(self, var): return var
+
+
 class dm_functions():
     '''Data miner suite of functions.
 
@@ -98,10 +111,7 @@ class dm_functions():
         # Column headers. Messy to list.
         self.allvars = pd.read_csv('data/all_vars_template.csv')
         self.mcdp = np.vectorize(meteocalc.dew_point)
-
-    def dataise(self, var): return var.data
-
-    def nodata(self, var): return var
+        self.slicevec = np.vectorize(slicer)
 
     def gen_flist(self, storminfo, varnames, varcodes=None):
         """Generate filelist
@@ -272,7 +282,7 @@ class dm_functions():
         Returns:
             Fills data frame value
         '''
-        eve = [11, 17, 17]
+        eve = [11, 17]
         for i in range(2):
             vari = var[eve[i], :, :]
             varn = cubemean(vari)
@@ -327,7 +337,7 @@ class dm_functions():
         eve = [11, 11, 17, 17, 17, 17]
         lex = [0.5, 3, 0.5, 3, 0.5, 3]
         func = cubemean, cubemean, cubemean, cube99, cube99
-        func2 = self.dataise, self.dataise, self.dataise, self.nodata, self.nodata
+        func2 = dataise, dataise, dataise, nodata, nodata
         for x, y, z, f, g in zip(eve, lex, strings, func, func2):
             mwind = (iris.analysis.maths.exponentiate(u[x, :, :], 2) +
                      iris.analysis.maths.exponentiate(v[x, :, :], 2))
@@ -406,15 +416,16 @@ class dm_functions():
         mshear = lowup.data - hiup.data
         self.allvars['max_shear'].loc[idx] = mshear
         maxcheck = 0
-        for p1 in lowu.coord('pressure').points:
-            for p2 in highu.coord('pressure').points:
-                lowslice = iris.Constraint(pressure=lambda cell: cell == p1)
-                highslice = iris.Constraint(pressure=lambda cell: cell == p2)
-                lowup2 = lowu.extract(lowslice).data
-                lowvp2 = lowv.extract(lowslice).data
-                highup2 = highu.extract(highslice).data
-                highvp2 = highv.extract(highslice).data
-                shearval = ((lowup2 - highup2)**2 + (lowvp2 - highvp2)**2)**0.5
+        p1 = lowu.coord('pressure').points
+        p2 = highu.coord('pressure').points
+        lowup2 = slicevec(p1, lowu)
+        lowvp2 = slicevec(p1, lowv)
+        highup2 = slicevec(p2, highu)
+        highvp2 = slicevec(p2, highv)
+        for i in range(len(lowup2)):
+            for j in range(len(highup2)):
+                shearval = ((lowup2[i] - highup2[j])**2 +
+                            (lowvp2[i] - highvp2[j])**2)**0.5
                 if shearval > maxcheck:
                     maxcheck = shearval
         self.allvars['hor_shear'].loc[idx] = maxcheck
@@ -483,6 +494,8 @@ class dm_functions():
         q850 = Q[3, :, :].extract(xy850)
         Tp = T850.data
         Qp = q850.data
+        Tp[Tp < 100] = np.nan
+        Qp[Qp < 100] = np.nan
         Tcol = np.nanmean(Tp, axis=(1, 2))
         Qcol = np.nanmean(Qp, axis=(1, 2))
         pressures = T850.coord('pressure').points
@@ -498,11 +511,12 @@ class dm_functions():
         dwpt = np.zeros_like(P)
         if pval == 18:
             humidity = ((0.263 * hum * P*100) / 2.714**((17.67*(Tkel))/(T - 29.65)))
+            RH_650 = (0.263 * hum * P) / 2.714**((17.67*(Tkel)) / (T - 29.65))
             height = T*((mslp/P)**(1./5.257) - 1)/0.0065
             height[-1] = 1.5
             dwpt[:] = self.mcdp(Tkel, humidity)  # vectorized dew_point calc
         else:
-            height, dwpt, humity, RH_650 = np.zeros((4, pval))
+            height, dwpt, humidity, RH_650 = np.zeros((4, pval))
         RH_650 = RH_650[np.where((P > 690) & (P <= 710))[0]]
         xwind = cubemean(u[3, :, :])
         ywind = cubemean(v[3, :, :])
@@ -510,7 +524,7 @@ class dm_functions():
         self.allvars['Tephi_T'].loc[idx] = np.average(T, axis=0)
         self.allvars['Tephi_dewpT'].loc[idx] = np.average(dwpt, axis=0)
         self.allvars['Tephi_height'].loc[idx] = np.average(height, axis=0)
-        self.allvars['Tephi_Q'].loc[idx] = np.average(humity, axis=0)
+        self.allvars['Tephi_Q'].loc[idx] = np.average(humidity, axis=0)
         self.allvars['Tephi_p99'].loc[idx] = precip99*3600.
         self.allvars['Tephi_xwind'].loc[idx] = xwind.data
         self.allvars['Tephi_ywind'].loc[idx] = ywind.data
