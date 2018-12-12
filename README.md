@@ -26,9 +26,8 @@ The first major release of developed scripts. Building from Rory's storm trackin
 * Reduction in lines of code from 3600 to 1100
 * Large increase in comments docstrings
 
-## Upcoming Features ##
+## Possible Upcoming Features ##
 
-0. Plotting tools
 2. Documentation improvements
 4. STASH code variable library
 3. Feature requests
@@ -40,7 +39,7 @@ The first major release of developed scripts. Building from Rory's storm trackin
 
  * [Python](https://www.anaconda.com/download/) (Standard anaconda package)
 
-A full list of Requirements is listed in the yml file (python 2)
+A full list of Requirements is listed in the yml file (python 3) *python 2 coming soon* 
 
 <hr>
 
