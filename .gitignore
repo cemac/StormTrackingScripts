@@ -4,7 +4,8 @@ csvs
 */*.pyc
 *.pyc
 .outline.md
-new_scripts/test_functions
+Prototypes/
+Parrallel_Scripts/
 build/
 source/
 Makefile
@@ -12,3 +13,4 @@ Workforw.md
 */*.txt
 */*test*.py
 Parallel_Scripts/
+Releasenotes.txt
