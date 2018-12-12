@@ -4,21 +4,14 @@
   <br>
 </div>
 
-<<<<<<< HEAD
-[![GitHub release](https://img.shields.io/badge/release-v.1.0-blue.svg)](
-https://github.com/cemac/StormTrackingScripts/releases/tag/v.1.0)
-
-**ORIGINAL VERSION**
-=======
 # Storm Tracking Scripts #
 
 [![GitHub release](https://img.shields.io/badge/release-v.2.0-blue.svg)](
 https://github.com/cemac/StormTrackingScripts/releases/tag/v.2.0)
->>>>>>> development
 
 ## Description ##
 
-Development of Storm Tracking Scripts from ICAS dynamics group.
+Development of Storm Tracking Scripts from ICAS dynamics group. *CEMAC Release Imminent*
 
 
 # Version 2.0 #
@@ -46,7 +39,7 @@ The first major release of developed scripts. Building from Rory's storm trackin
 
  * [Python](https://www.anaconda.com/download/) (Standard anaconda package)
 
-A full list of Requirements is listed in the yml file (python 3) *python 2 coming soon* 
+A full list of Requirements is listed in the yml file (python 3) *python 2 coming soon*
 
 <hr>
 
