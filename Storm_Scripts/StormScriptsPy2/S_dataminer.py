@@ -17,8 +17,8 @@
 
 Example:
     To use::
-        import StormScriptsPy3 as SSP3
-        dmf = SSP3.dm_functions(dataroot, CAPE='Y', TEPHI='Y')
+        import StormScriptsPy2 as SSP
+        dmf = SSP.dm_functions(dataroot, CAPE='Y', TEPHI='Y')
         storms_to_keep = pd.read_csv('fc_teststorms_over_box_area5000_lons_'+
                                      '345_375_lat_10_18.csv', sep=',')
         dmf.genvarscsv('fc_test', storms_to_keep)
@@ -30,22 +30,37 @@ Example:
 import glob
 import sys
 import os
-import copyreg
+import copy_reg as copyreg
 import warnings
 import types
-import gc
 import pandas as pd
 import numpy as np
 import iris
 import meteocalc
 from skewt import SkewT as sk
-from StormScriptsPy3.Pfuncts import *
-import StormScriptsPy3.Pfuncts as Pf
+from StormScriptsPy2.Pfuncts import *
+import StormScriptsPy2.Pfuncts as Pf
 
 # Over ride pickle GIL (Allows the parallelization)
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 copyreg.pickle(types.MethodType, Pf._pickle_method)
+
+
+# performance relaced functions: Slicer allows vectorized contraints
+def slicer(ps, val):
+            smslice = iris.Constraint(pressure=lambda cell: cell == ps)
+            return val.extract(smslice).data
+
+
+# dataise and no data allow for zipped loop
+def dataise(var): return var.data
+
+
+def nodata(var): return var
+
+
+slicevec = np.vectorize(slicer)
 
 
 class dm_functions():
@@ -91,12 +106,15 @@ class dm_functions():
         self.dataroot = dataroot
         # Varibales from configuration file.
         self.vars = pd.read_csv('data/stash_vars.csv')
+        self.varnos = len(self.vars)
         # For efficiency len is not called in a for loop
         self.novars = len(self.vars)
         # 1200 and 1800 time variables
         self.evemid = [11, 17]
         # Column headers. Messy to list.
         self.allvars = pd.read_csv('data/all_vars_template.csv')
+        self.mcdp = np.vectorize(meteocalc.dew_point)
+        self.slicevec = np.vectorize(slicer)
 
     def gen_flist(self, storminfo, varnames, varcodes=None):
         """Generate filelist
@@ -114,12 +132,12 @@ class dm_functions():
             ds = pd.Series(os.listdir(self.dataroot))
             foldername = ds[ds.str.len() == 6].reset_index(drop=True)
         df = pd.DataFrame(columns=['file', 'codes', 'varname'])
-        for i in range(self.novars):
+        for i, folder in enumerate(foldername):
             try:
-                df.loc[i] = [glob.glob(str(self.dataroot) + str(foldername[i])
-                                       + '/' + str(foldername[i]) + '*_' +
+                df.loc[i] = [glob.glob(str(self.dataroot) + str(folder)
+                                       + '/' + str(folder) + '*_' +
                                        str(storminfo) + '*-*.nc')[0],
-                             foldername[i], varnames[i]]
+                             folder, varnames[i]]
             except IndexError:
                 pass
         return df
@@ -151,7 +169,9 @@ class dm_functions():
             if storminfo != storminfo1:
                 flist = self.gen_flist(storminfo, self.vars['varname'],
                                        varcodes=self.vars['code'])
-                if flist['file'].isnull().sum() > 0:
+                if len(flist) < self.varnos:
+                    # reset storminfo else missing file won't get caught...
+                    storminfo = 00000000
                     print('WARNING: Storm missing data files, skipping...')
                     continue
             # location of storm
@@ -210,7 +230,6 @@ class dm_functions():
                 qf = flist[flist.varname == 'Q'].file
                 fnamelist = [qf, q15f, Tf, t15f]
                 self.calc_cape(fnamelist, u, v, precip99, xy, idx, latlons)
-            gc.collect()
         return self.allvars
 
     def genvarscsv(self, csvroot, storms_to_keep, nice=4, shared='Y'):
@@ -266,18 +285,13 @@ class dm_functions():
         Returns:
             Fills data frame value
         '''
-        str1200, strmean, str99p = strings
-        # Loop midday and evening
-        for num in self.evemid:
-            varn = var[num, :, :]
-            varmean = cubemean(varn).data
-            if num == 11:
-                # midday mean value
-                self.allvars[str1200].loc[idx] = varmean
-            else:
-                var99p = cube99(varn, per=p)
-                self.allvars[strmean].loc[idx] = varmean  # evening mean
-                self.allvars[str99p].loc[idx] = var99p  # evening 99th %
+        eve = [11, 17]
+        for i in range(2):
+            vari = var[eve[i], :, :]
+            varn = cubemean(vari)
+            self.allvars[strings[i]].loc[idx] = varn.data
+        var99p = cube99(vari, per=p)
+        self.allvars[strings[2]].loc[idx] = var99p
 
     def calc_t15(self, t15f, xy, idx):
         '''Description: mean99 for T15 (air_temperature) variable
@@ -321,24 +335,18 @@ class dm_functions():
             Fills wind related data frame values
         '''
         # Loop for 1200 and 1800
-        for num in self.evemid:
-            mwind = (iris.analysis.maths.exponentiate(u[num, :, :], 2) +
-                     iris.analysis.maths.exponentiate(v[num, :, :], 2))
-            # loop for exponentiate sqrt and cubed
-            for lex in [0.5, 3]:
-                mwind2 = iris.analysis.maths.exponentiate(mwind, lex)
-                mwind1p = cube99(mwind2)
-                mwind2 = cubemean(mwind2).data
-                if lex == 0.5 and num == 11:
-                    self.allvars['midday_wind'].loc[idx] = mwind2
-                elif num == 11 and lex == 3:
-                    self.allvars['midday_wind3'].loc[idx] = mwind2
-                elif lex == 0.5 and num == 17:
-                    self.allvars['eve_wind_mean'].loc[idx] = mwind2
-                    self.allvars['eve_wind_99p'].loc[idx] = mwind1p
-                elif lex == 3 and num == 17:
-                    self.allvars['eve_wind3_mean'].loc[idx] = mwind2
-                    self.allvars['eve_wind3_99p'].loc[idx] = mwind1p
+        strings = ['midday_wind', 'midday_wind3', 'eve_wind_mean',
+                   'eve_wind3_mean', 'eve_wind_99p', 'eve_wind3_99p']
+        eve = [11, 11, 17, 17, 17, 17]
+        lex = [0.5, 3, 0.5, 3, 0.5, 3]
+        func = cubemean, cubemean, cubemean, cube99, cube99
+        func2 = dataise, dataise, dataise, nodata, nodata
+        for x, y, z, f, g in zip(eve, lex, strings, func, func2):
+            mwind = (iris.analysis.maths.exponentiate(u[x, :, :], 2) +
+                     iris.analysis.maths.exponentiate(v[x, :, :], 2))
+            mwind2 = iris.analysis.maths.exponentiate(mwind, y)
+            var = f(mwind2)
+            self.allvars[z].loc[idx] = g(var)
 
     def calc_tow(self, of, Tf, xy600, idx):
         '''Description: Calculate bouyancy, omega and max for eveing midday etc
@@ -411,15 +419,16 @@ class dm_functions():
         mshear = lowup.data - hiup.data
         self.allvars['max_shear'].loc[idx] = mshear
         maxcheck = 0
-        for p1 in lowu.coord('pressure').points:
-            for p2 in highu.coord('pressure').points:
-                lowslice = iris.Constraint(pressure=lambda cell: cell == p1)
-                highslice = iris.Constraint(pressure=lambda cell: cell == p2)
-                lowup2 = lowu.extract(lowslice).data
-                lowvp2 = lowv.extract(lowslice).data
-                highup2 = highu.extract(highslice).data
-                highvp2 = highv.extract(highslice).data
-                shearval = ((lowup2 - highup2)**2 + (lowvp2 - highvp2)**2)**0.5
+        p1 = lowu.coord('pressure').points
+        p2 = highu.coord('pressure').points
+        lowup2 = slicevec(p1, lowu)
+        lowvp2 = slicevec(p1, lowv)
+        highup2 = slicevec(p2, highu)
+        highvp2 = slicevec(p2, highv)
+        for i in range(len(lowup2)):
+            for j in range(len(highup2)):
+                shearval = ((lowup2[i] - highup2[j])**2 +
+                            (lowvp2[i] - highvp2[j])**2)**0.5
                 if shearval > maxcheck:
                     maxcheck = shearval
         self.allvars['hor_shear'].loc[idx] = maxcheck
@@ -438,16 +447,13 @@ class dm_functions():
         # load cubes
         wet = iris.load_cube(wetf).extract(xy)
         dry = iris.load_cube(dryf).extract(xy)
-        mass = wet
-        mass.data = wet.data + dry.data
-        mass.extract(xy)
-        for num in self.evemid:
-            massn = mass[num, :, :]
+        mass = iris.analysis.maths.apply_ufunc(np.add, wet, dry)
+        eve = [11, 17]
+        strings = ['mass_mean_1200', 'mass_mean_1800']
+        for x, y, in zip(eve, strings):
+            massn = mass[x, :, :]
             massm = cubemean(massn).data
-            if num == 11:
-                self.allvars['mass_mean_1200'].loc[idx] = massm
-            else:
-                self.allvars['mass_mean_1800'].loc[idx] = massm
+            self.allvars[y].loc[idx] = massm
 
     def calc_cape(self, fnamelist, u, v, precip99, xy, idx, latlons):
         r'''Description:
@@ -483,74 +489,49 @@ class dm_functions():
             mslp = 975
         # Special slice
         xy850 = genslice(latlons, n1=mslp, n2=100)
+        T = iris.load_cube(Tf)
+        Q = iris.load_cube(qf)
         T850 = T[3, :, :].extract(xy850)
-        q850 = q[3, :, :].extract(xy850)
+        q850 = Q[3, :, :].extract(xy850)
         Tp = T850.data
         Qp = q850.data
-        # get rid of values sub 100?
         Tp[Tp < 100] = np.nan
-        Tcol = np.zeros(Tp.shape[0])
-        Qcol = np.zeros(Tp.shape[0])
-        for p in range(0, Tp.shape[0]):
-            Tcol[p] = np.nanmean(Tp[p, :, :])
-            Qcol[p] = np.nanmean(Qp[p, :, :])
-        Tcube = cubemean(T850)
-        Qcube = cubemean(q850)
-        Tcube.data = Tcol
-        Qcube.data = Qcol
-        pval = Tcube.data.shape[0] + 1
-        f_T = T[3, : pval, 1, 1]
-        f_q = q[3, : pval, 1, 1]
-        f_T.data[:pval-1] = Tcol
-        f_q.data[:pval-1] = Qcol
-        t15 = cubemean(iris.load_cube(t15f)[11, :, :].extract(xy))
-        P = self.allvars['eve_mslp_mean'].loc[idx]/100
-        f_T.data[pval-1] = t15.data
-        q15 = iris.load_cube(q15f)
-        q15 = q15[11, :, :].extract(xy)
-        f_q.data[pval-1] = cubemean(q15).data
-        T = f_T.data
-        hum = f_q.data
+        Qp[Qp < 100] = np.nan
+        Tcol = np.nanmean(Tp, axis=(1, 2))
+        Qcol = np.nanmean(Qp, axis=(1, 2))
+        pressures = T850.coord('pressure').points
+        P = np.append(pressures, mslp)
+        pval = T850.data.shape[0] + 1
+        Temp = Tcol
+        T15 = cubemean(iris.load_cube(t15f)[11, :, :].extract(xy)).data
+        T = np.append(Temp, T15)
         Tkel = T - 273.16
-        pressures = Tcube.coord('pressure').points
-        pressures = np.append(pressures, mslp)
-        P = pressures * 100
-        pnum = len(pressures)
-        height = np.zeros((pnum))
-        dwpt = np.zeros((pnum))
-        humity = np.zeros((pnum))
-        RH_650 = np.zeros((pnum))
-        if pnum == 18:
-            for p in range(0, pnum):
-                if 710. >= P[p] > 690.:
-                    RH_650[p] = ([(0.263 * hum[p] * P[p]) /
-                                  2.714**((17.67*(Tkel[p])) /
-                                          (T[p] - 29.65))])
-
-                humity[p] = ((0.263 * hum[p] * P[p]) /
-                             2.714**((17.67*(Tkel[p]))/(T[p] - 29.65)))
-                try:
-                    dwpt[p] = meteocalc.dew_point(temperature=Tkel[p],
-                                                  humidity=humity[p])
-                except ValueError:
-                    dwpt[p] = np.nan
-                if p < pnum-1:
-                    height[p] = T[p]*((mslp*100/P[p])**(1./5.257) - 1)/0.0065
-                else:
-                    height[p] = 1.5
+        humcol = Qcol
+        Q15 = cubemean(iris.load_cube(q15f)[11, :, :].extract(xy)).data
+        hum = np.append(humcol, Q15)
+        dwpt = np.zeros_like(P)
+        if pval == 18:
+            humidity = ((0.263 * hum * P*100) / 2.714**((17.67*(Tkel))/(T - 29.65)))
+            RH_650 = (0.263 * hum * P) / 2.714**((17.67*(Tkel)) / (T - 29.65))
+            height = T*((mslp/P)**(1./5.257) - 1)/0.0065
+            height[-1] = 1.5
+            dwpt[:] = self.mcdp(Tkel, humidity)  # vectorized dew_point calc
+        else:
+            height, dwpt, humidity, RH_650 = np.zeros((4, pval))
+        RH_650 = RH_650[np.where((P > 690) & (P <= 710))[0]]
         xwind = cubemean(u[3, :, :])
         ywind = cubemean(v[3, :, :])
         self.allvars['Tephi_pressure'].loc[idx] = np.average(pressures, axis=0)
         self.allvars['Tephi_T'].loc[idx] = np.average(T, axis=0)
         self.allvars['Tephi_dewpT'].loc[idx] = np.average(dwpt, axis=0)
         self.allvars['Tephi_height'].loc[idx] = np.average(height, axis=0)
-        self.allvars['Tephi_Q'].loc[idx] = np.average(humity, axis=0)
+        self.allvars['Tephi_Q'].loc[idx] = np.average(humidity, axis=0)
         self.allvars['Tephi_p99'].loc[idx] = precip99*3600.
         self.allvars['Tephi_xwind'].loc[idx] = xwind.data
         self.allvars['Tephi_ywind'].loc[idx] = ywind.data
         self.allvars['Tephi_RH650'].loc[idx] = np.average(RH_650, axis=0)
         mydata = dict(zip(('hght', 'pres', 'temp', 'dwpt'),
-                          (height[::-1], pressures[::-1], T.data[::-1],
+                          (height[::-1], P[::-1], Tkel[::-1],
                            dwpt[:: -1])))
         try:
             S = sk.Sounding(soundingdata=mydata)
@@ -559,8 +540,8 @@ class dm_functions():
         except AssertionError:
             print('dew_point = ', dwpt[:: -1])
             print('height = ', height[:: -1])
-            print('pressures = ', pressures[:: -1])
-            print('Temp = ', T.data[:: -1])
+            print('pressures = ', P[:: -1])
+            print('Temp = ', Tkel[:: -1])
             print('AssertionError: Use a monotonically increasing abscissa')
             print('Setting to np.nan')
             P_lcl, P_lfc, P_el, CAPE, CIN = [np.nan, np.nan, np.nan, np.nan, np.nan]

@@ -16,8 +16,8 @@
 
 Example:
     To use::
-        import StormScriptsPy3 as SSP3
-        var = SSP3.Pfuncts.method(args)
+        import StormScriptsPy2 as SSP
+        var = SSP.Pfuncts.method(args)
 
 .. CEMAC_stomtracking:
    https://github.com/cemac/StormTrackingScripts

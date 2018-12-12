@@ -1,6 +1,6 @@
-import StormScriptsPy3.Pfuncts
-from StormScriptsPy3.S_Box import StormInBox
-from StormScriptsPy3.S_dataminer import dm_functions
+import StormScriptsPy2.Pfuncts
+from StormScriptsPy2.S_Box import StormInBox
+from StormScriptsPy2.S_dataminer import dm_functions
 
 __version__ = '2.0.0'
 

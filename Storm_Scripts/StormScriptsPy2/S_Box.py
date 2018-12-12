@@ -18,8 +18,8 @@
 
 Example:
     To use::
-        import StormScriptsPy3 as SSP3
-        c = SSP3.S_Box.StormInBox(x1, x2, y1, y2, size_of_storm, idstring, run='fc')
+        import StormScriptsPy as SSP
+        c = SSP.S_Box.StormInBox(x1, x2, y1, y2, size_of_storm, idstring, run='fc')
         c.gen_storm_box_csv()
 
 .. CEMAC_stomtracking:
@@ -28,7 +28,7 @@ Example:
 
 
 import glob
-import copyreg
+import copy_reg as copyreg
 import warnings
 import sys
 import types

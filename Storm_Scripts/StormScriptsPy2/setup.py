@@ -1,14 +1,14 @@
 from setuptools import setup
 
 setup(
-    name='StormScriptsPy3',
+    name='StormScriptsPy2',
     version='2.0.0',
-    description=('Python3 Paralell Storm Data Scripts for retrieving data on' +
+    description=('Python2 Paralell Storm Data Scripts for retrieving data on' +
                  'storms in a set region and plotting various stats'),
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering',
       ],
     license='BSD-2',

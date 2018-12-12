@@ -13,3 +13,5 @@ Workforw.md
 */*test*.py
 Parrallel_Scripts/
 Releasenotes.txt
+Parrallel_Scripts/*
+*/*__pycache__
