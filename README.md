@@ -28,12 +28,12 @@ The first major release of developed scripts. Building from Rory's storm trackin
 
 ## Possible Upcoming Features ##
 
-2. Documentation improvements
-4. STASH code variable library
+1. Documentation improvements
+2. STASH code variable library
 3. Feature requests
 4. Switch to CF-python
 5. minor speed up
-1. Python GUI
+6. Python GUI
 
 ## Requirements ##
 
