@@ -11,7 +11,7 @@ https://github.com/cemac/StormTrackingScripts/releases/tag/v.2.0)
 
 ## Description ##
 
-Development of Storm Tracking Scripts from ICAS dynamics group. *CEMAC Release Imminent*
+Development of Storm Tracking Scripts from ICAS dynamics group. 
 
 
 # Version 2.0 #
@@ -56,9 +56,10 @@ wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
 bash Miniconda2-latest-Linux-x86_64.sh #skip if you already have anaconda
 export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
 cd StormTrackingScripts
-conda env create -f StormScriptsPy2.yml
+conda env create --name StormS
 conda clean -t
-
+cd Storm_Scripts_py2
+python StormScriptsPy2/setup.py install
 ```
 
 ## Python 3 ##
@@ -76,9 +77,10 @@ git clone https://github.com/tjlang/SkewT.git
 cd SkewT
 python setup.py install
 cd StormTrackingScripts
-conda env create -f StormScriptsPy3.yml
+conda env create --name StormS
 conda clean -t
-
+cd Storm_Scripts
+python StormScriptsPy3/setup.py install
 ````
 
 <hr>
