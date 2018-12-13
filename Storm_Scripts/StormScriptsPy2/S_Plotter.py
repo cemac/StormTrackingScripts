@@ -16,10 +16,10 @@
 
 Example:
     To use::
-        import StormScriptsPy3 as SSP3
+        import StormScriptsPy2 as SSP
         fc_csv = 'data/fc_example_standard.csv'
         cc_csv = 'data/cc_example_standard.csv'
-        c = SSP3.S_Plotter.stormstats(fc_csv, cc_csv)
+        c = SSP.S_Plotter.stormstats(fc_csv, cc_csv)
         # You can generate a standard plot simply by:
         c.Standard_Correl2(c.df_fc, c.df_cc, 'Example')
 Memebers:
