@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Data miner
+"""Storm Plotter
 
 .. module:: S_Plotter
     :platform: Unix
-    :synopis:
+    :synopis: With csv files generated statistics and plots are to be performed
 
 .. moduleauthor: CEMAC (UoL)
 
@@ -27,9 +27,22 @@ import numpy as np
 import scipy.stats as stat
 import matplotlib.pyplot as plt
 from pylab import rcParams
-rcParams['figure.figsize'] = 36, 48
+
 
 def correls(var1, var2, labelstr):
+    '''Plot correlation line
+
+        Description:
+            1 D polyfit correlation line between var 1 and 2. Dashed line
+            highlights P test value > 0.05
+
+        Args:
+            var1 (DataFrame column): Variable 1
+            var2 (DataFrame column): Variable 2
+            labelstr (String):
+        Returns:
+            Plot of correlations
+        '''
     correlfirst = stat.pearsonr(var1, var2)
     ptest = correlfirst[1]
     correlfirst_run = float("{0:.3f}".format(correlfirst[0]))
@@ -47,10 +60,27 @@ def correls(var1, var2, labelstr):
 def correl_panel_plot(panelno, figletter, var1c, var2c, var1f, var2f,
                       xlabel, ylabel='99th percentile \n precipitation rate (mm/hr)',
                       panels=[3, 4]):
-    plt.subplot(panels[0],panels[1], panelno)
+    '''Plot Scatter plots and correlations
+
+        Description:
+            Scatter plot of variables for 2 scenatios e.g. current and future
+            Adds line of best fit showing correletation (if any)
+
+        Args:
+            panelno (int): position in sub plot.
+            figletter (string): e.g. 'a) ' to denote figure
+            var1c (DataFrame column): Variable 1 scenario 1
+            var2c (DataFrame column): Variable 2 scenario 1
+            var1f (DataFrame column): Variable 1 scenario 2
+            var2f (DataFrame column): Variable 2 scenario 2
+            xlabel (String): x label (variable 1)
+            xlabel (String): y lable (variable 2). Defaults to precipitation
+            panels (array): [x, y] defaults to 12 plots 3 by 4
+        Returns:
+            Scatter plot with correlation lines
+        '''
+    plt.subplot(panels[0], panels[1], panelno)
     plt.ylabel(ylabel, fontsize=12)
-    print(len(var1c),len(var2c))
-    print(len(var1f),len(var2f))
     plt.scatter(var1c, var2c, c='r', marker='*', s=5)
     plt.scatter(var1f, var2f, c='b', marker='v', s=5)
     plt.xlabel(xlabel, fontsize=12)
@@ -59,14 +89,31 @@ def correl_panel_plot(panelno, figletter, var1c, var2c, var1f, var2f,
         fc = correls(var1f, var2f, ' FC correl')
         plt.title(figletter + 'CC correl = ' + str(cc) +
               ', FC correl = ' + str(fc), loc='right', fontsize=16)
-    except:
+    except np.linalg.LinAlgError:
         print('plot '+figletter+'did not fully succeed')
+        print('SVD did not converge in Linear Least Squares')
     return
 
 
 def shear_pdfs(panelno, figlet, var1c, var1f, xlabel,
                ylabel='Probaility density', panels=[3, 4]):
-    plt.subplot(panels[0],panels[1], panelno)
+    '''Plot Probaility distribution plots
+
+        Description:
+            PDF between 2 scenarios
+
+        Args:
+            panelno (int): position in sub plot.
+            figletter (string): e.g. 'a) ' to denote figure
+            var1c (DataFrame column): Variable 1 scenario 1
+            var1f (DataFrame column): Variable 1 scenario 2
+            xlabel (String): x label (variable 1)
+            xlabel (String): y lable (variable 2).
+            panels (array): [x, y] defaults to 12 plots 3 by 4
+        Returns:
+            Histogram of PDFs.
+    '''
+    plt.subplot(panels[0], panels[1], panelno)
     mean_var1c = np.average(var1c)
     mean_var1f = np.average(var1f)
     correl = stat.ttest_ind(var2c, var2f, equal_var=False)
@@ -74,7 +121,7 @@ def shear_pdfs(panelno, figlet, var1c, var1f, xlabel,
     Sigval = float("{0:.3f}".format(Sigval))
     bins = np.linspace(np.min([np.min(var1f[:]), np.min(var1c[:])]),
                        np.max([np.max(var1f[:]), np.max(var1c[:])]), 25)
-    plt.title(figlet + '- Confidence Interval = ' + str(Sigval), fontsize=16)
+    plt.title(figlet + '- Confidence Interval = ' + str(Sigval), fontsize=18)
     n, bins, patches = plt.hist(var1c[:], bins, normed=1, facecolor='g',
                                 label='mean = ' +
                                 str(float("{0:.2f}".format(mean_var1c))))
@@ -83,12 +130,24 @@ def shear_pdfs(panelno, figlet, var1c, var1f, xlabel,
                                 str(float("{0:.2f}".format(mean_var1f))))
     plt.scatter(mean_var1c, 0, c='g')
     plt.scatter(mean_var1f, 0, c='b')
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.xlabel(xlabel, fontsize=14)
+    plt.ylabel(ylabel, fontsize=14)
     plt.legend(fontsize=8)
 
 
 def createvars(csvname):
+    '''Extra Variable Generation
+
+        Description:
+            For the standard plots some additional variables are required
+
+        Args:
+            csvname(string)
+        Returns:
+            DataFrame including attional variables:
+                cold pool, sea level pressure diff, wind diffs,
+                preciption corrected, shear TCWs, tripple threats, omega TCW
+    '''
     df = pd.read_csv(csvname, sep=',')
     # Remove duplicate storms
     df = df.drop_duplicates(subset='storms_to_keep', keep='first')
@@ -107,20 +166,36 @@ def createvars(csvname):
     return df
 
 
-def bins(v1, v2):
+def bins(v1, v2, bino=25):
+    '''Bin for vaibles
+
+        Args:
+            v1 (DF column): variable 1
+            v2 (DF column): variable 2
+            bino (int): No of bins. Defaults to 25
+        Returns:
+            vbin (array): bins for variables
+    '''
     vbin = np.linspace(np.min([np.min(v1), np.min(v2)]), np.max([np.max(v1),
-                       np.max(v2)]), 25)
+                       np.max(v2)]), bino)
     return vbin
 
 
 def bothhists(bc_hist, var1, var2, varP, T_bins, o_bins):
+    '''histogram data gen
+            Called when generating histograms
+        Args:
+
+        Returns:
+
+    '''
     var1 = var1.reset_index(drop=True)
     var2 = var2.reset_index(drop=True)
     varP = varP.reset_index(drop=True)
     for element in range(0, len(var1)):
         OMEGA = var2[element]
         TCW = var1[element]
-        a=25
+        a = 25
         for x in range(0, int(a) - 1):
             for y in range(0, int(a) - 1):
                     if x < int(a) - 1 and y < int(a) - 1:
@@ -130,21 +205,78 @@ def bothhists(bc_hist, var1, var2, varP, T_bins, o_bins):
     return bc_hist
 
 
-class stormcalcs(object):
-    '''Description
-       Stage 1: currently a suit of functions for finding information on
-       storms in region and Generating cvs files of that information.
+def histograms(panelno, figlet, var1c, var1f, var2c, var2f, xlab,
+               ylab, panels=[2, 2]):
+    '''Plot Histograms
+
+    Args:
+        panelno (int): position in sub plot.
+        figletter (string): e.g. 'a) ' to denote figure
+        var1c (DataFrame column): Variable 1 scenario 1
+        var1f (DataFrame column): Variable 1 scenario 2
+        var2c (DataFrame column): Variable 2 scenario 1
+        var2f (DataFrame column): Variable 2 scenario 2
+        xlab (String): x label (variable 1)
+        xlab (String): y lable (variable 2).
+        panels (array): [x, y] defaults to 4 plots 2 by 2
+    Returns:
+        Histogram of PDFs.
+    '''
+    plt.subplot(panels[0], panels[1], panelno)
+    T_bins = bins(var1c, var1f)
+    o_bins = bins(var2c, var2f)
+    a = 25
+    bc_hist = np.zeros((int(a), int(a), 2), float)
+    bc_hist = bothhists(bc_hist, var1c, var2c, df_cc.precip99, T_bins, o_bins)
+    bc_hist = bothhists(bc_hist, var1f, var2f, df_cc.precip99, T_bins, o_bins)
+    for x in range(0, int(a)):
+        for y in range(0, int(a)):
+            if bc_hist[x, y, 0] > 0:
+                bc_hist[x, y, 1] = (bc_hist[x, y, 1] / bc_hist[x, y, 0])
+                bc_hist[x, y, 0] = (100 * bc_hist[x, y, 0] /
+                                    (len(var2c) + len(var2f)))
+    pallette1 = plt.get_cmap('rainbow')
+    pallette1.set_under('k', alpha=0.3)
+    pallette1.set_over('Gray')
+    levels = np.linspace(1., np.max(bc_hist[:, :, 1]), 20)
+    cd = plt.pcolor(o_bins, T_bins, bc_hist[:, :, 1], vmin=1.,
+                    vmax=np.max(bc_hist[:, :, 1]), cmap=pallette1)
+    cb = plt.colorbar(cd, orientation='vertical')
+    cb.set_label('both climates \n precip rate (mm/hr)', fontsize=16)
+    plt.xlabel(xlab, fontsize=14)
+    plt.ylabel(ylab, fontsize=14)
+    plt.title(figlet, x=0.01, fontsize=16)
+    return bc_hist
+
+
+class stormstats(object):
+    '''StormStats
+        Initialised extra varible and provides standard plots and
+        plotting tools
 
     '''
     def __init__(self, fc_csv, cc_csv):
+        '''
+        Args:
+            fc_csv (string): filename and path of csv file generated by
+                             S_Dataminer e.g future scenario
+            cc_csv (string): filename and path of csv file generated by
+                             S_Dataminer e.g current climate
+        '''
+        self.df_fc = self.createvars(fc_csv)
+        self.df_cc = self.createvars(cc_csv)
 
-        self.fcname = fc_csv
-        self.ccname = cc_csv
-        self.df_fc = self.createvars(csvnamefc)
-        self.df_cc = self.createvars(csvnamecc)
-
-    def Rorys__precip_correl(self, df_fc, df_cc, figname):
-
+    def Standard_precip_correl(self, df_fc, df_cc, figname):
+        '''Standard plot of precipitation _correlations
+            Also serves as template for bespoke plots.
+        Args:
+            df_fc (DataFrame): ideally self .df_fc
+            df_cc (DataFrame): ideally self .df_cc
+            figname (String): identifier for filename
+        Returns:
+            Png file with plot matching oginal script plots.
+        '''
+        rcParams['figure.figsize'] = 36, 48
         panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         figletter = ['a) ', 'b) ', 'c) ', 'd) ', 'e) ', 'f) ', 'g) ', 'h) ',
                      'i) ', 'j) ', 'k) ']
@@ -176,8 +308,17 @@ class stormcalcs(object):
         plt.savefig(figname + '_precip_correlations.png')
         plt.clf()
 
-    def Rorys_shear_pdf(self, df_fc, df_cc, figname):
-
+    def Standard_shear_pdf(self, df_fc, df_cc, figname):
+        '''Standard plot of Shear PDFs
+            Also serves as template for bespoke plots.
+        Args:
+            df_fc (DataFrame): ideally self .df_fc
+            df_cc (DataFrame): ideally self .df_cc
+            figname (String): identifier for filename
+        Returns:
+            Png file with plot matching oginal script plots.
+        '''
+        rcParams['figure.figsize'] = 36, 48
         panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         figletter = ['a) ', 'b) ', 'c) ', 'd) ', 'e) ', 'f) ', 'g) ', 'h) ',
                      'i) ', 'j) ', 'k) ']
@@ -209,8 +350,17 @@ class stormcalcs(object):
         plt.savefig(figname + '_PDF.png')
         plt.clf()
 
-    def Rorys__Correl1(self, df_fc, df_cc, figname):
-
+    def Standard_Correl1(self, df_fc, df_cc, figname):
+        '''Standard plot of Correlations
+            Also serves as template for bespoke plots.
+        Args:
+            df_fc (DataFrame): ideally self .df_fc
+            df_cc (DataFrame): ideally self .df_cc
+            figname (String): identifier for filename
+        Returns:
+            Png file with plot matching oginal script plots.
+        '''
+        rcParams['figure.figsize'] = 36, 48
         panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         figletter = ['a) ', 'b) ', 'c) ', 'd) ', 'e) ', 'f) ', 'g) ', 'h) ',
                      'i) ', 'j) ', 'k) ', 'l) ']
@@ -247,14 +397,24 @@ class stormcalcs(object):
                  df_fc.buoyancy_1800_1p, df_fc.cold]
 
         for i in panelno:
-                correl_panel_plot(i, figletter[i-1], var1c[i-1], var2c[i-1], var1f[i-1],
-                              var2f[i-1], xlab[i-1], ylabel=ylab[i-1])
+                correl_panel_plot(i, figletter[i-1], var1c[i-1], var2c[i-1],
+                                  var1f[i-1], var2f[i-1], xlab[i-1],
+                                  ylabel=ylab[i-1])
         plt.tight_layout()
         plt.savefig(figname + '_correlations.png')
         plt.clf()
 
-    def Rorys__Correl2(self, df_fc, df_cc, figname):
-
+    def Standard_Correl2(self, df_fc, df_cc, figname):
+        '''Standard plot of Correlations
+            Also serves as template for bespoke plots.
+        Args:
+            df_fc (DataFrame): ideally self .df_fc
+            df_cc (DataFrame): ideally self .df_cc
+            figname (String): identifier for filename
+        Returns:
+            Png file with plot matching oginal script plots.
+        '''
+        rcParams['figure.figsize'] = 36, 48
         panelno = [1, 2]
         figletter = ['a) ', 'b) ']
         xlab = ['Horizontal wind shear (m/s)', 'SBCAPE']
@@ -270,35 +430,16 @@ class stormcalcs(object):
         plt.savefig(figname + '_correlations2.png')
         plt.clf()
 
-    def histograms(self, panelno, figlet, var1c, var1f, var2c, var2f, xlab,
-                   ylab, panels=[2, 2]):
-        plt.subplot(panels[0],panels[1], panelno)
-        T_bins = bins(var1c, var1f)
-        o_bins = bins(var2c, var2f)
-        a=25
-        bc_hist = np.zeros((int(a), int(a), 2), float)
-        bc_hist = bothhists(bc_hist, var1c, var2c, df_cc.precip99, T_bins, o_bins)
-        bc_hist = bothhists(bc_hist, var1f, var2f, df_cc.precip99, T_bins, o_bins)
-        for x in range(0, int(a)):
-            for y in range(0, int(a)):
-                if bc_hist[x, y, 0] > 0:
-                    bc_hist[x, y, 1] = (bc_hist[x, y, 1] / bc_hist[x, y, 0])
-                    bc_hist[x, y, 0] = (100 * bc_hist[x, y, 0] /
-                                        (len(var2c) + len(var2f)))
-        pallette1 = plt.get_cmap('rainbow')
-        pallette1.set_under('k', alpha=0.3)
-        pallette1.set_over('Gray')
-        levels = np.linspace(1., np.max(bc_hist[:, :, 1]), 20)
-        cd = plt.pcolor(o_bins, T_bins, bc_hist[:, :, 1], vmin=1.,
-                        vmax=np.max(bc_hist[:, :, 1]), cmap=pallette1)
-        cb = plt.colorbar(cd, orientation='vertical')
-        cb.set_label('both climates \n precip rate (mm/hr)', fontsize=16)
-        plt.xlabel(xlab,fontsize=14)
-        plt.ylabel(ylab, fontsize=14)
-        plt.title(figlet, x=0.01, fontsize=16)
-        return bc_hist
-
-    def Rorys__hist(self, df_fc, df_cc, figname):
+    def Standard_histograms(self, df_fc, df_cc, figname):
+        '''Standard plot of Histograms
+            Also serves as template for bespoke plots.
+        Args:
+            df_fc (DataFrame): ideally self .df_fc
+            df_cc (DataFrame): ideally self .df_cc
+            figname (String): identifier for filename
+        Returns:
+            Png file with plot matching oginal script plots.
+        '''
         rcParams['figure.figsize'] = 24, 24
         panelno = [1, 2, 3]
         figletter = ['a) ', 'b) ', 'c) ']
@@ -315,8 +456,81 @@ class stormcalcs(object):
         var2f = [df_fc.shear_TCW_eve, df_fc.cold, df_fc.midday_wind]
 
         for i in panelno:
-            bc_hist = self.histograms(i, figletter[i-1], var1c[i-1],  var1f[i-1],
-                                var2c[i-1], var2f[i-1], xlab[i-1], ylab[i-1])
+            bc_hist = histograms(i, figletter[i-1], var1c[i-1],  var1f[i-1],
+                                 var2c[i-1], var2f[i-1], xlab[i-1], ylab[i-1])
         plt.tight_layout()
         plt.savefig(figname + '_histograms.png')
+        plt.clf()
+
+    def Standard_coldpool(self, df_fc, df_cc, figname):
+        '''Standard plot of Correlations for cold pool
+            Also serves as template for bespoke plots.
+        Args:
+            df_fc (DataFrame): ideally self .df_fc
+            df_cc (DataFrame): ideally self .df_cc
+            figname (String): identifier for filename
+        Returns:
+            Png file with plot matching oginal script plots.
+        '''
+        rcParams['figure.figsize'] = 24, 16
+        panelno = [1, 2]
+        figletter = ['a) ', 'b) ', 'c) ', 'd) ']
+        xlab = ['1800Z 1 perc T - 1200Z mean T (K)',
+                '1800Z 1 perc T - 1200Z mean T \n [CC Corected] (K)'
+                '1800Z 1 perc T - 1200Z mean T (K)']
+
+        ylab = ['99p precipitation (mm/hr)', '99p precipitation (mm/hr)'
+                'mean OLR (W/m2)', '99p precipitation (mm/hr)']
+
+        var1c = [df_cc.cold, df_cc.cold, df_cc.cold, df_cc.cold]
+        var1f = [df_fc.cold, df_fc.cold - 0.514998, df_fc.cold,
+                 df_fc.cold - 0.514998]
+        var2c = [df_cc.precip99, df_cc.precip99, df_cc.OLRs, df_cc.precip99]
+        var2f = [df_fc.precip99, df_fc.precip99, df_fc.OLRs, df_fc.precip99]
+
+        for i in panelno:
+            correl_panel_plot(i, figletter[i-1], var1c[i-1], var2c[i-1],
+                              var1f[i-1], var2f[i-1], xlab[i-1])
+        plt.tight_layout()
+        plt.savefig(figname + '_cold_correlations.png')
+        plt.clf()
+
+    def Standard_pdfs(self,  df_fc, df_cc, figname):
+        '''Standard plot of PDFs
+            Also serves as template for bespoke plots.
+        Args:
+            df_fc (DataFrame): ideally self .df_fc
+            df_cc (DataFrame): ideally self .df_cc
+            figname (String): identifier for filename
+        Returns:
+            Png file with plot matching oginal script plots.
+        '''
+        rcParams['figure.figsize'] = 36, 36
+        panelno = [1, 2, 3, 4]
+        figletter = ['a) ', 'b) ', 'c) ', 'd) ',  'e) ', 'f) ', 'g) ', 'h) ']
+
+        xlab = ['1800Z 1% 1.5-meter T \n - 1200Z mean 1.5-meter T (K)',
+                '1800Z 99th perc surface pressure \n - 1200Z mean surface pressure (hPa)'
+                '1800Z 99% 10-m wind speed \n - 1200Z mean 10-m wind speed (m/s)'
+                '1800Z mean 10-m w.s.c. \n - 1200Z mean 10-m w.s.c. (m3/s3)',
+                '1800Z 1% 1.5-meter \n Temperature (K)',
+                '1800Z 99th perc \n surface pressure (hPa)',
+                '1800Z 99% 10-meter \n wind speed (m/s)',
+                '1800Z mean 10-meter \n wind speed cubed [w.s.c.] (m3/s3)']
+
+        var1c = [df_cc.cold, (df_cc.mslp_diff + 0.11185) / 100.,
+                 df_cc.u_diff_10m, df_cc.u3_diff_10m, df_cc.mean_T15_1800,
+                 df_cc.eve_mslp_mean / 100., df_cc.eve_wind_mean,
+                 df_cc.eve_wind3_mean]
+
+        var1f = [df_fc.cold, df_fc.mslp_diff/100., df_fc.u_diff_10m + 0.38104,
+                 df_fc.u3_diff_10m + 33.2881, df_fc.mean_T15_1800,
+                 df_fc.eve_mslp_mean / 100., df_fc.eve_wind_mean,
+                 df_fc.eve_wind3_mean]
+        for i in panelno:
+            shear_pdfs(i, figletter[i-1], var1c[i-1], var1f[i-1], xlab[i-1],
+                       panels=[2, 2])
+
+        plt.tight_layout()
+        plt.savefig(figname + '_PDF.png')
         plt.clf()
