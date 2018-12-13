@@ -7,7 +7,7 @@
 # Storm Tracking Scripts #
 
 [![GitHub release](https://img.shields.io/badge/release-v.2.0-blue.svg)](
-https://github.com/cemac/StormTrackingScripts/releases/tag/v.2.0)
+https://github.com/cemac/StormTrackingScripts/releases/tag/2.0.0)
 
 ## Description ##
 
