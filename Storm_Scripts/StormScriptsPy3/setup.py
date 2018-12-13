@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='StormScriptsPy3',
@@ -13,9 +13,9 @@ setup(
       ],
     license='BSD-2',
     packages=find_packages(),
-    data_files=['../data']
+    data_files=['../data'],
     setup_requires=['setuptools-yaml'],
-    metadata_yaml='StormScripts_py2.yml',
+    metadata_yaml='StormScripts_py3.yml',
     author='University of Leeds',
     author_email='h.l.burns@leeds.ac.uk',
     keywords=['Storms'],

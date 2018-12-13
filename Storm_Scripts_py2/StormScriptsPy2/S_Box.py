@@ -36,7 +36,7 @@ import gc
 import iris
 import pandas as pd
 import numpy as np
-import StormScriptsPy3.Pfuncts as Pfuncts
+import StormScriptsPy2.Pfuncts as Pfuncts
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")

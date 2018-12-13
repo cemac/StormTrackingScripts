@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='StormScriptsPy2',
@@ -15,7 +15,7 @@ setup(
     packages=find_packages(),
     setup_requires=['setuptools-yaml'],
     metadata_yaml='StormScripts_py2.yml',
-    data_files=['../data']
+    data_files=['data/all_vars_template.csv', 'data/stash_vars.csv'],
     author='University of Leeds',
     author_email='h.l.burns@leeds.ac.uk',
     keywords=['Storms'],
