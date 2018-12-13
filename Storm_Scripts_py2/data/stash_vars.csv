@@ -1,0 +1,16 @@
+code,varname,standard name,units
+c03236,T15,air_temperature(t lat lon),K
+c03237,Q15,specific_humidity(t lat lon),1
+f30201,u,x_wind(t p lat lon),m s-1
+f30202,v,y_wind(t p lat lon),m s-1
+f30208,omega,lagrangian_tendency_of_air_pressure(t p lat lon),Pa s-1
+f30204,T,air_temperature(t p lat lon),K
+f30205,Q,specific_humidity(t p lat lon),1
+a04203,precip,stratiform_rainfall_rate(t lat lon),kg m-2 s-1
+c30403,dry_mass,(t lat lon),missing
+c30404,wet_mass,atmosphere_mass_per_unit_area(t lat lon),kg m-2
+a30439,col_w,(t lat lon),missing
+a03332,olr,toa_outgoing_longwave_flux(t lat lon),W m-2
+c00409,ms1p,surface_air_pressure(t lat lon),Pa
+c03225,u10,x_wind(t lat lon),m s-1
+c03226,v10,y_wind(t lat lon),m s-1

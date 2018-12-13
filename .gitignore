@@ -1,6 +1,5 @@
 .tasks.md
 csvs
-*.csv
 */*.pyc
 *.pyc
 .outline.md
@@ -15,4 +14,5 @@ Parrallel_Scripts/
 Releasenotes.txt
 Parrallel_Scripts/*
 */*__pycache__
-*.png 
+*.png
+Tests
