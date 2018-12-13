@@ -39,7 +39,7 @@ The first major release of developed scripts. Building from Rory's storm trackin
 
  * [Python](https://www.anaconda.com/download/) (Standard anaconda package)
 
-A full list of Requirements is listed in the yml file (python 3) *python 2 coming soon*
+A full list of Requirements is listed in the yml files (python 3). installing via setup.py will account for requirements. 
 
 <hr>
 
@@ -87,7 +87,7 @@ python StormScriptsPy3/setup.py install
 
 # Usage #
 
-Keep Python package folder.
+Either have installed the module or added to python path.
 
 Can be used to find a subset of storms from the precip_tracking_12km_hourly
 text files and mine the relevant data. Comes with plotting tools.
