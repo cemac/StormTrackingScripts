@@ -114,6 +114,7 @@ dmf.genvarscsv('cc_storms_', pd.read_csv('generated_file.csv', sep=',')
 
 ## Issue Templates ##
 
+* A full guide on submitting issue and bug are given in our [contribution guidelines](https://github.com/cemac/StormTrackingScripts/blob/master/CONTRIBUTING.md)
 * Please use our issue templates for feature requests and bug fixes.
 
 <hr>

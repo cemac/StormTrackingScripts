@@ -13,10 +13,9 @@ setup(
       ],
     license='BSD-2',
     packages=find_packages(),
-    install_requires=[
-          '',
-      ], # Pip dependencies
-    dependency_links=['http://github.com/user/repo/tarball/master#egg=package-1.0'] # Iris link
+    setup_requires=['setuptools-yaml'],
+    metadata_yaml='StormScripts_py2.yml',
+    data_files=['../data']
     author='University of Leeds',
     author_email='h.l.burns@leeds.ac.uk',
     keywords=['Storms'],
