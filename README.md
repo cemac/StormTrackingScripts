@@ -9,6 +9,10 @@
 [![GitHub release](https://img.shields.io/badge/release-v.2.0-blue.svg)](
 https://github.com/cemac/StormTrackingScripts/releases/tag/2.0)
 
+
+[![DOI](https://zenodo.org/badge/148126570.svg)](https://zenodo.org/badge/latestdoi/148126570)
+
+
 ## Description ##
 
 Development of Storm Tracking Scripts from ICAS dynamics group. 
