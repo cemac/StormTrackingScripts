@@ -6,11 +6,7 @@
 
 # Storm Tracking Scripts #
 
-[![GitHub release](https://img.shields.io/badge/release-v.2.0-blue.svg)](
-https://github.com/cemac/StormTrackingScripts/releases/tag/2.0)
-
-
-[![DOI](https://zenodo.org/badge/148126570.svg)](https://zenodo.org/badge/latestdoi/148126570)
+[![DOI](https://zenodo.org/badge/148126570.svg)](https://zenodo.org/badge/latestdoi/148126570) [![GitHub release](https://img.shields.io/github/release/cemac/StormTrackingScripts.svg)](https://github.com/cemac/StormTrackingScripts/releases) [![GitHub top language](https://img.shields.io/github/languages/top/cemac/StormTrackingScripts.svg)](https://github.com/cemac/StormTrackingScripts) [![GitHub issues](https://img.shields.io/github/issues/cemac/StormTrackingScripts.svg)](https://github.com/cemac/StormTrackingScripts/issues) [![GitHub last commit](https://img.shields.io/github/last-commit/cemac/StormTrackingScripts.svg)](https://github.com/cemac/StormTrackingScripts/commits/master) [![GitHub All Releases](https://img.shields.io/github/downloads/cemac/StormTrackingScripts/total.svg)](https://github.com/cemac/StormTrackingScripts/releases)
 
 
 ## Description ##
