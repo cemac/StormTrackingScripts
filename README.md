@@ -56,7 +56,8 @@ wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
 bash Miniconda2-latest-Linux-x86_64.sh #skip if you already have anaconda
 export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
 cd StormTrackingScripts
-conda env create --name StormS
+conda create --name StormS
+conda activate StormS
 conda clean -t
 cd Storm_Scripts_py2
 python StormScriptsPy2/setup.py install
@@ -73,11 +74,12 @@ extra step is required*
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh #skip if you already have anaconda
 export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
+conda create --name StormS python=3.6
+conda activate StormS
 git clone https://github.com/tjlang/SkewT.git
 cd SkewT
 python setup.py install
 cd StormTrackingScripts
-conda env create --name StormS
 conda clean -t
 cd Storm_Scripts
 python StormScriptsPy3/setup.py install
