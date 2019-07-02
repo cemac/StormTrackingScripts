@@ -16,13 +16,13 @@ import StormScriptsPy3 as SSP3
 import matplotlib.pyplot as plt
 
 # Give file names
-fc_csv = 'data/fc_test_standard.csv'
-cc_csv = 'data/cc_test_standard.csv'
+fc_csv = 'data/fc_example_standard.csv'
+cc_csv = 'data/cc_example_standard.csv'
 c = SSP3.S_Plotter.stormstats(fc_csv, cc_csv)
 # Create extra variable required
 df_fc = SSP3.S_Plotter.createvars(fc_csv)
 df_cc = SSP3.S_Plotter.createvars(cc_csv)
-
+figname = 'Shear'
 # Define panel numbers, figletters, lables and variables to plot
 panelno = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
