@@ -11,7 +11,7 @@
 
 ## Description ##
 
-Development of Storm Tracking Scripts from ICAS dynamics group. 
+Development of Storm Tracking Scripts from ICAS dynamics group.
 
 
 # Version 2.0 #
@@ -39,7 +39,7 @@ The first major release of developed scripts. Building from Rory's storm trackin
 
  * [Python](https://www.anaconda.com/download/) (Standard anaconda package)
 
-A full list of Requirements is listed in the yml files (python 3). installing via setup.py will account for requirements. 
+A full list of Requirements is listed in the yml files (python 3). installing via setup.py will account for requirements.
 
 <hr>
 
@@ -56,7 +56,7 @@ wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
 bash Miniconda2-latest-Linux-x86_64.sh #skip if you already have anaconda
 export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
 cd StormTrackingScripts
-conda create --name StormS
+conda env create -f StormScripts_py2.yml
 conda activate StormS
 conda clean -t
 cd Storm_Scripts_py2
@@ -74,12 +74,12 @@ extra step is required*
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh #skip if you already have anaconda
 export PATH="$HOME/miniconda3/bin:$PATH" #skip if you already have anaconda
-conda create --name StormS python=3.6
+cd StormTrackingScripts
+conda env create -f StormScripts_py3.yml
 conda activate StormS
 git clone https://github.com/tjlang/SkewT.git
 cd SkewT
 python setup.py install
-cd StormTrackingScripts
 conda clean -t
 cd Storm_Scripts
 python StormScriptsPy3/setup.py install

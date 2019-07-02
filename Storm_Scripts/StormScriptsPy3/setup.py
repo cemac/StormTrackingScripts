@@ -13,7 +13,7 @@ setup(
       ],
     license='BSD-2',
     packages=find_packages(),
-    data_files=['../data'],
+    data_files=['data/all_vars_template.csv', 'data/stash_vars.csv'],
     setup_requires=['setuptools-yaml'],
     metadata_yaml='StormScripts_py3.yml',
     author='University of Leeds',
