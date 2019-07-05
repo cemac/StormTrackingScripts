@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - python=2.7
-  - iris
+  - iris==1.13.0
   - matplotlib
   - netcdf4
   - pandas

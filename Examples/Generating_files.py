@@ -6,7 +6,7 @@
 
 To use:
 
-    python Genertating_files.py
+    python Generating_files.py
 
 .. CEMAC_stomtracking:
    https://github.com/cemac/StormTrackingScripts
